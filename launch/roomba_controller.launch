@@ -1,10 +1,12 @@
- <launch>
+ <launch
 
-     <node pkg="roomba_500driver_meiji" name="roomba_test" type="main500"/>
-     <remap from="roomba_controller" to="roomba_controller">
-  <!-- <node pkg="hokuyo_node" name="laser_scan" type="hokuyo_node"/>-->
-  <!-- <node pkg="chibi_challenge" name="roomba_avoidance_test" type="avoidance"/> -->
-  <!-- <node pkg="chibi_challenge" name="tf_br" type="frame_tf_br"/>-->
-  <!-- <node pkg="chibi_challenge" name="tf_vel" type="tf_vel"/>-->
+     <node pkg="roomba_500driver_meiji" name="roomba_test" type="main500"/ output="screen">
+
+     <node pkg="hokuyo_node" name="hokuyo_node" type="hokuyo_node">
+	<pram name name="serial_port" value="/dev/ttyACM0"/ >
+     </node>
+    
+     <node pkg="chibi20_2" name="chibi20_2" type="chibi20_2" output="screen">
+     </node>
 
 </launch>

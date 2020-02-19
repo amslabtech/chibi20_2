@@ -5,6 +5,8 @@
 #include "roomba_500driver_meiji/RoombaCtrl.h"
 #include "nav_msgs/Odometry.h"
 #include <iostream>
+#include "tf/tf.h"
+#include "sensor_msgs/LaserScan.h"
 
 class RoombaContoroller
 {
