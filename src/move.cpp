@@ -54,13 +54,13 @@ int   main (int argc, char **argv)
   ros::Publisher pub_control = n.advertise<roomba_500driver_meiji::RoombaCtrl>("/roomba/control",100);
   ros::Subscriber sub_odometry = n.subscribe("/roomba/odometry",100,odometry_callback);
   ros::Rate loop_rate(10);
-  do
-  {
-      init_odometry.pose.pose.position.x=odometry.pose.pose.position.x;
-      init_odometry.pose.pose.position.y=odometry.pose.pose.position.y;
-      init_theta=  tf::getYaw(odometry.pose.pose.orientation);
-      theta=  tf::getYaw(odometry.pose.pose.orientation);
-  }while(odometry.pose.pose.position.x==0);
+  // do
+  // {
+  //     init_odometry.pose.pose.position.x=odometry.pose.pose.position.x;
+  //     init_odometry.pose.pose.position.y=odometry.pose.pose.position.y;
+  //     init_theta=  tf::getYaw(odometry.pose.pose.orientation);
+  //     theta=  tf::getYaw(odometry.pose.pose.orientation);
+  // }while(odometry.pose.pose.position.x==0);
 
   while(ros::ok())
   {
