@@ -56,7 +56,7 @@ roomba_500driver_meiji::RoombaCtrl  sleep_init()
 roomba_500driver_meiji::RoombaCtrl  go_straight()
 {
     roomba_500driver_meiji::RoombaCtrl control;
-    if(fabs(pow(init_odometry.pose.pose.position.x-odometry.pose.pose.position.x,2)+pow(init_odometry.pose.pose.position.y-odometry.pose.pose.position.y,2))<=9.0)
+    if(fabs(pow(init_odometry.pose.pose.position.x-odometry.pose.pose.position.x,2)+pow(init_odometry.pose.pose.position.y-odometry.pose.pose.position.y,2))<=6.5)
     // if(fabs(init_odometry.pose.pose.position.x-odometry.pose.pose.position.x)<1.0)
     {
         control.cntl.linear.x=0.2;
@@ -97,7 +97,7 @@ roomba_500driver_meiji::RoombaCtrl laser_go()
     roomba_500driver_meiji::RoombaCtrl control;
     if(!laser.ranges.empty())
     {
-        if(laser.ranges[540]>=0.5)
+        if(laser.ranges[540]>=0.6)
         {
             control.cntl.linear.x=0.1;
             control.cntl.angular.z=0;
