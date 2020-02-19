@@ -34,6 +34,7 @@ roomba_500driver_meiji::RoombaCtrl  go_straight()
 
 roomba_500driver_meiji::RoombaCtrl turn_a_round()
 {
+    roomba_500driver_meiji::RoombaCtrl control;
     if((theta-init_theta)>=M_PI*2*0.3)
     {
         control.cntl.linear.x=0.0;
@@ -43,6 +44,7 @@ roomba_500driver_meiji::RoombaCtrl turn_a_round()
     {
         phase=2;
     }
+    return control;
 }
 
 int   main (int argc, char **argv)
@@ -67,9 +69,14 @@ int   main (int argc, char **argv)
     theta=  tf::getYaw(odometry.pose.pose.orientation);
     switch(phase)
     {
-        case(0): control=go_straight(); break();
-        case(1): control=turn_a_round(); break();
-        default: break();
+        case(0):
+            control=go_straight();
+            break;
+        case(1):
+            control=turn_a_round();
+            break;
+        default:
+            break;
     }
     if(phase==2)
     {
