@@ -45,7 +45,7 @@ roomba_500driver_meiji::RoombaCtrl  sleep_init()
         {
             control.cntl.linear.x=0;
             control.cntl.angular.z=0.1;
-            if(sleep_flag>=360)
+            if(sleep_flag>=540)
                 phase=3;
         }
     }
@@ -56,14 +56,17 @@ roomba_500driver_meiji::RoombaCtrl  sleep_init()
 roomba_500driver_meiji::RoombaCtrl  go_straight()
 {
     roomba_500driver_meiji::RoombaCtrl control;
-    // if(fabs(pow(init_odometry.pose.pose.position.x-odometry.pose.pose.position.x,2)+pow(init_odometry.pose.pose.position.y-odometry.pose.pose.position.y,2))<=9.0)
-    if(fabs(init_odometry.pose.pose.position.x-odometry.pose.pose.position.x)<1.0)
+    if(fabs(pow(init_odometry.pose.pose.position.x-odometry.pose.pose.position.x,2)+pow(init_odometry.pose.pose.position.y-odometry.pose.pose.position.y,2))<=9.0)
+    // if(fabs(init_odometry.pose.pose.position.x-odometry.pose.pose.position.x)<1.0)
     {
         control.cntl.linear.x=0.2;
         control.cntl.angular.z=0.0;
     }
     else
     {
+        init_theta=  tf::getYaw(odometry.pose.pose.orientation);
+        init_odometry.pose.pose.position.x=odometry.pose.pose.position.x;
+        init_odometry.pose.pose.position.y=odometry.pose.pose.position.y;
         phase=2;
     }
     return control;
@@ -72,11 +75,11 @@ roomba_500driver_meiji::RoombaCtrl  go_straight()
 roomba_500driver_meiji::RoombaCtrl turn_a_round()
 {
     roomba_500driver_meiji::RoombaCtrl control;
-    if(init_theta<M_PI*-1*0.99)
-    {
-        init_theta=M_PI*-1*0.97;
-    }
-    if(!fabs(theta-init_theta<M_PI*0.01))
+    // if(init_theta<M_PI*-1*0.99)
+    // {
+    //     init_theta=M_PI*-1*0.97;
+    // }
+    if(!(fabs(theta-init_theta)<0.01*M_PI))
     {
         control.cntl.linear.x=0.0;
         control.cntl.angular.z=0.1;
@@ -94,7 +97,7 @@ roomba_500driver_meiji::RoombaCtrl laser_go()
     roomba_500driver_meiji::RoombaCtrl control;
     if(!laser.ranges.empty())
     {
-        if(laser.ranges[360]>=0.5)
+        if(laser.ranges[540]>=0.5)
         {
             control.cntl.linear.x=0.1;
             control.cntl.angular.z=0;
