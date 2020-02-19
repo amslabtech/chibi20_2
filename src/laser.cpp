@@ -33,8 +33,8 @@ int main (int argc, char **argv)
     roomba_500driver_meiji::RoombaCtrl control;
     control.mode = roomba_500driver_meiji::RoombaCtrl::DRIVE_DIRECT;
     if(!laser.ranges.empty()){
-      if(laser.ranges[360] >= 1.0){
-        control.cntl.linear.x = 0.5;
+      if(laser.ranges[360] >= 0.5){
+        control.cntl.linear.x = 0.1;
         control.cntl.angular.z=0.0;
       }else{
         control.cntl.linear.x = 0.0;
