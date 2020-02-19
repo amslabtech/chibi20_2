@@ -2,7 +2,7 @@
 #include "roomba_500driver_meiji/RoombaCtrl.h"
 #include "nav_msgs/Odometry.h"
 #include "tf/tf.h"
-#include "sensor_msgs/Odometry.h"
+#include "sensor_msgs/LaserScan.h"
 // using namespace std;
 
 nav_msgs::Odometry odometry;
@@ -92,9 +92,9 @@ roomba_500driver_meiji::RoombaCtrl turn_a_round()
 roomba_500driver_meiji::RoombaCtrl laser_go()
 {
     roomba_500driver_meiji::RoombaCtrl control;
-    if(!lasar.ranges.empty())
+    if(!laser.ranges.empty())
     {
-        if(lasar.ranges[360]>=0.5)
+        if(laser.ranges[360]>=0.5)
         {
             control.cntl.linear.x=0.1;
             control.cntl.angular.z=0;
@@ -105,6 +105,7 @@ roomba_500driver_meiji::RoombaCtrl laser_go()
             control.cntl.angular.z=0;
         }
     }
+    return control;
 }
 
 int   main (int argc, char **argv)
