@@ -2,7 +2,6 @@
 #include "roomba_500driver_meiji/RoombaCtrl.h"
 #include "sensor_msgs/LaserScan.h"
 #include "nav_msgs/Odometry.h"
-#include <iostream>
 
 using namespace std;
 int foo=0;
