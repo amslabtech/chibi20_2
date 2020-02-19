@@ -18,7 +18,7 @@ void odometry_callback(const nav_msgs::Odometry::ConstPtr& odo)
 
 void sleep_init()
 {
-    if(sleep_flag>=10)
+    if(sleep_flag>=60)
     {
         phase=1;
         init_theta=  tf::getYaw(odometry.pose.pose.orientation);
@@ -49,7 +49,11 @@ roomba_500driver_meiji::RoombaCtrl  go_straight()
 roomba_500driver_meiji::RoombaCtrl turn_a_round()
 {
     roomba_500driver_meiji::RoombaCtrl control;
-    if(fabs(theta-init_theta)<=M_PI*0.5)
+    if(init_theta<M_PI*-1*0.98)
+    {
+        init_theta=M_PI*-1*0.97;
+    }
+    if((init_theta-theta<M_PI*0.02)&&(init_theta-theta>0))
     {
         control.cntl.linear.x=0.0;
         control.cntl.angular.z=0.1;
@@ -58,6 +62,7 @@ roomba_500driver_meiji::RoombaCtrl turn_a_round()
     {
         phase=3;
     }
+
     return control;
 }
 
@@ -67,7 +72,7 @@ int   main (int argc, char **argv)
   ros::NodeHandle n;
   ros::Publisher pub_control = n.advertise<roomba_500driver_meiji::RoombaCtrl>("/roomba/control",100);
   ros::Subscriber sub_odometry = n.subscribe("/roomba/odometry",100,odometry_callback);
-  ros::Rate loop_rate(10);
+  ros::Rate loop_rate(60);
   // do
   // {
   //     init_odometry.pose.pose.position.x=odometry.pose.pose.position.x;
