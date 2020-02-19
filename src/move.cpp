@@ -2,18 +2,26 @@
 #include "roomba_500driver_meiji/RoombaCtrl.h"
 #include "nav_msgs/Odometry.h"
 #include "tf/tf.h"
+#include "sensor_msgs/Odometry.h"
 // using namespace std;
 
 nav_msgs::Odometry odometry;
 nav_msgs::Odometry init_odometry;
+sensor_msgs::LaserScan laser;
 int phase=0;
 double theta=0.0;
 double init_theta=0.0;
 int sleep_flag=0;
+int foo=0;
 
 void odometry_callback(const nav_msgs::Odometry::ConstPtr& odo)
 {
   odometry = *odo;
+}
+
+void laser_callback(const sensor_msgs::LaserScan::ConstPtr& lsr)
+{
+  laser = *lsr;
 }
 
 roomba_500driver_meiji::RoombaCtrl  sleep_init()
@@ -81,12 +89,31 @@ roomba_500driver_meiji::RoombaCtrl turn_a_round()
     return control;
 }
 
+roomba_500driver_meiji::RoombaCtrl laser_go()
+{
+    roomba_500driver_meiji::RoombaCtrl control;
+    if(!lasar.ranges.empty())
+    {
+        if(lasar.ranges[360]>=0.5)
+        {
+            control.cntl.linear.x=0.1;
+            control.cntl.angular.z=0;
+        }
+        else
+        {
+            control.cntl.linear.x=0;
+            control.cntl.angular.z=0;
+        }
+    }
+}
+
 int   main (int argc, char **argv)
 {
   ros::init(argc,argv,"test");
   ros::NodeHandle n;
-  ros::Publisher pub_control = n.advertise<roomba_500driver_meiji::RoombaCtrl>("/roomba/control",100);
-  ros::Subscriber sub_odometry = n.subscribe("/roomba/odometry",100,odometry_callback);
+  ros::Publisher pub_control = n.advertise<roomba_500driver_meiji::RoombaCtrl>("/roomba/control",1);
+  ros::Subscriber sub_odometry = n.subscribe("/roomba/odometry",1,odometry_callback);
+  ros::Subscriber sub_laser = n.subscribe("/scan",1,laser_callback);
   ros::Rate loop_rate(60);
   // do
   // {
@@ -115,10 +142,12 @@ int   main (int argc, char **argv)
         case(3):
             control=turn_a_round();
             break;
+        case(4):
+            control=laser_go();
         default:
             break;
     }
-    if(phase==4)
+    if(phase==5)
     {
          control.cntl.linear.x=0.0;
          control.cntl.angular.z=0.0;
