@@ -6,6 +6,8 @@
 	<pram name="serial_port" value="/dev/ttyACM0"/ >
      </node>
     
+     <node pkg="chibi20_2" name="chibi20_2" type="move"/>
+
      <node pkg="chibi20_2" name="chibi20_2" type="chibi20_2" output="screen">
      </node>
 
