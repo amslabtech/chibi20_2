@@ -1,20 +1,20 @@
-#include <roomba_controller/roomba_controller.h>
+// #include "roomba_controller/roomba_controller.h"
 //using namespace std;
+#include "roomba_controller/roomba_controller.h"
 
-
-RoombaController::RoombaController:private_nh("~")
+ RoombaController::RoombaController() : private_n("~")
 {
     //parameter
-    private_nh.parm("hz",hz,{10});
-    private_nh.parm("sleeping_length",sleeping_length,{1.0});
-    private_nh.parm("phase",phase,{0});
-    private_nh.parm("theta",theta,{0});
-    private_nh.parm("init_theta",init_theta,{0});
+    private_n.param("hz",hz,{10});
+    private_n.param("sleeping_length",sleeping_length,{1.0});
+    private_n.param("phase",phase,{0});
+    private_n.param("theta",theta,{0});
+    private_n.param("init_theta",init_theta,{0});
 
 
     //subscriber
-    sub_odometry = n.subscribe("/roomba/odometry",1,odometry_callback);
-    sub_laser = n.subscribe("/scan",1,laser_callback);
+    sub_odometry = n.subscribe("/roomba/odometry",1,&RoombaController::odometry_callback,this);
+    sub_laser = n.subscribe("/scan",1,&RoombaController::laser_callback,this);
 
     //publisher
     pub_control = n.advertise<roomba_500driver_meiji::RoombaCtrl>("/roomba/control",1);
@@ -24,7 +24,7 @@ RoombaController::RoombaController:private_nh("~")
 
 void RoombaController::odometry_callback(const nav_msgs::Odometry::ConstPtr& odo)
 {
-  current_odometry = *odo;
+  odometry = *odo;
 }
 
 void RoombaController::laser_callback(const sensor_msgs::LaserScan::ConstPtr& lsr)
@@ -35,7 +35,7 @@ void RoombaController::laser_callback(const sensor_msgs::LaserScan::ConstPtr& ls
 roomba_500driver_meiji::RoombaCtrl RoombaController::go_straight()
 {
     roomba_500driver_meiji::RoombaCtrl control;
-    if(sqrt(pow(init_odometry.pose.pose.position.x-odometry.pose.pose.position.x,2)+pow(init_odometry.pose.pose.y-odometry.pose.pose.y,2))<=3.0)
+    if(sqrt(pow(init_odometry.pose.pose.position.x-odometry.pose.pose.position.x,2)+pow(init_odometry.pose.pose.position.y-odometry.pose.pose.position.y,2))<=3.0)
     {
         control.cntl.linear.x=0.2;
         control.cntl.angular.z=0.0;
@@ -116,7 +116,7 @@ void RoombaController::process()
         control.mode = roomba_500driver_meiji::RoombaCtrl::DRIVE_DIRECT;
         pub_control.publish(control);
         ros::spinOnce();
-        std::cout<< "current_odometry:" << current_odometry.pose.pose.position << std::endl;
+        std::cout<< "odometry:" << odometry.pose.pose.position << std::endl;
         std::cout<<"init_odometry:"<<std::endl;
         std::cout << init_odometry.pose.pose.position << std::endl;
         loop_rate.sleep();

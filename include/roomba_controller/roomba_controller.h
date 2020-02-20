@@ -1,4 +1,4 @@
-#ifdef _ROOMBA_CONTROLLER_H
+#ifndef _ROOMBA_CONTROLLER_H
 #define _ROOMBA_CONTROLLER_H
 
 #include "ros/ros.h"
@@ -30,11 +30,12 @@ private:
         double init_theta;
 
         //member
-        ros::NodeHndle n;
-        ros::Publisher pub_controll;
+        ros::NodeHandle n;
+        ros::NodeHandle private_n;
+        ros::Publisher pub_control;
         ros::Subscriber sub_odometry;
         ros::Subscriber sub_laser;
-        nav_msgs::Odometry current_odometry;
+        nav_msgs::Odometry odometry;
         nav_msgs::Odometry init_odometry;
         sensor_msgs::LaserScan laser;
 
