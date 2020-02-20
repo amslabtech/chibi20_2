@@ -1,8 +1,8 @@
-#include "roomba_controller/roomba_controller.h"
+#include <roomba_controller/roomba_controller.h>
 //using namespace std;
 
 
-RoombaController::RoombaController():private_nh("~")
+RoombaController::RoombaController:private_nh("~")
 {
     //parameter
     private_nh.parm("hz",hz,{10});
@@ -17,7 +17,7 @@ RoombaController::RoombaController():private_nh("~")
     sub_laser = n.subscribe("/scan",1,laser_callback);
 
     //publisher
-    pub_control = n.advertise<roomba_500driver_meiji::RoombaCtrl>("/roomba/control",1,this);
+    pub_control = n.advertise<roomba_500driver_meiji::RoombaCtrl>("/roomba/control",1);
 
 }
 
@@ -53,7 +53,7 @@ roomba_500driver_meiji::RoombaCtrl RoombaController::go_straight()
 roomba_500driver_meiji::RoombaCtrl RoombaController::turn_a_round()
 {
     roomba_500driver_meiji::RoombaCtrl control;
-    if(!(fabs(theta-init_theta)<0.01*M_PI))
+    if(!(fabs(init_theta-theta)<0.01*M_PI))
     {
         control.cntl.linear.x=0.0;
         control.cntl.angular.z=0.1;
@@ -94,6 +94,8 @@ void RoombaController::process()
     {
         roomba_500driver_meiji::RoombaCtrl control;
         theta = tf::getYaw(odometry.pose.pose.orientation);
+        if(theta<0)
+            theta+= M_PI*2;
         switch(phase)
         {
             case(0):
@@ -114,9 +116,9 @@ void RoombaController::process()
         control.mode = roomba_500driver_meiji::RoombaCtrl::DRIVE_DIRECT;
         pub_control.publish(control);
         ros::spinOnce();
-        cout<< "current_odometry:" << current_odometry.pose.pose.position << endl;
-        cout<<"init_odometry:"<<endl;
-        cout << init_odometry.pose.pose.position << endl;
+        std::cout<< "current_odometry:" << current_odometry.pose.pose.position << std::endl;
+        std::cout<<"init_odometry:"<<std::endl;
+        std::cout << init_odometry.pose.pose.position << std::endl;
         loop_rate.sleep();
     }
 }

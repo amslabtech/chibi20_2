@@ -3,7 +3,7 @@ project(chibi20_2)
 
 SET(CMAKE_CXX_FLAGS "-std=c++11 -O2 -g -Wall ${CMAKE_CXX_FLAGS}")
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+# add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -36,9 +36,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## package, follow these steps:
 ## * Let MSG_DEP_SET be the set of packages whose message types you use in
 ##   your messages/services/actions (e.g. std_msgs, actionlib_msgs, ...).
-## * In the file package.xml:
-##   * add a build_depend tag for "message_generation"
-##   * add a build_depend and a exec_depend tag for each package in MSG_DEP_SET
+## * In the file package.xml: ##   * add a build_depend tag for "message_generation" ##   * add a build_depend and a exec_depend tag for each package in MSG_DEP_SET
 ##   * If MSG_DEP_SET isn't empty the following dependency has been pulled in
 ##     but can be declared for certainty nonetheless:
 ##     * add a exec_depend tag for "message_runtime"
@@ -110,8 +108,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  # INCLUDE_DIRS include
-  #LIBRARIES chibi20_2
+#   INCLUDE_DIRS include
+#   LIBRARIES chibi20_2
 #  CATKIN_DEPENDS roscpp rospy std_msg
 #  DEPENDS system_lib
 )
@@ -140,9 +138,9 @@ include
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
- add_executable(laser src/laser.cpp)
-#  add_executable(roomba_controller src/roomba_controller.cpp)
- add_executable(move src/move.cpp)
+#  add_executable(laser src/laser.cpp)
+ add_executable(roomba_controller src/roomba_controller.cpp)
+#  add_executable(move src/move.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -153,15 +151,14 @@ include
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 
-#  add_dependencies(roomba_controller  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
- add_dependencies(laser  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
- add_dependencies(move  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(roomba_controller  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#  add_dependencies(laser  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(move  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
  ## Specify libraries to link a library or executable target against
-#  target_link_libraries(roomba_controller   ${catkin_LIBRARIES} )
- target_link_libraries(laser   ${catkin_LIBRARIES} )
- target_link_libraries(move   ${catkin_LIBRARIES} )
-#  target_link_libraries(roomba_controller   ${catkin_LIBRARIES} )
+target_link_libraries(roomba_controller   ${catkin_LIBRARIES} )
+#  target_link_libraries(laser   ${catkin_LIBRARIES} )
+#  target_link_libraries(move   ${catkin_LIBRARIES} )
 
 
 #############

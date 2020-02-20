@@ -4,14 +4,13 @@
 #include "ros/ros.h"
 #include "roomba_500driver_meiji/RoombaCtrl.h"
 #include "nav_msgs/Odometry.h"
-#include <iostream>
 #include "tf/tf.h"
 #include "sensor_msgs/LaserScan.h"
 
-class RoombaContoroller
+class RoombaController
 {
 public:
-        RoombaContoroller();
+        RoombaController();
         void process();
 
 
@@ -26,11 +25,9 @@ private:
         //parameter
         double hz;
         double sleeping_length;
-        int phase ;
+        int phase;
         double theta;
         double init_theta;
-
-
 
         //member
         ros::NodeHndle n;
@@ -43,4 +40,4 @@ private:
 
 };
 
-#endif
+#endif //_ROOMBA_CONTROLLER_H
