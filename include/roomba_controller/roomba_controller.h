@@ -28,6 +28,7 @@ private:
         int phase;
         double theta;
         double init_theta;
+        int turn_phase;
 
         //member
         ros::NodeHandle n;

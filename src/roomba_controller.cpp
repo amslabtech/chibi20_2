@@ -10,6 +10,7 @@
     private_n.param("phase",phase,{0});
     private_n.param("theta",theta,{0});
     private_n.param("init_theta",init_theta,{0});
+    private_n.param("turn_phase",turn_phase,{0});
 
 
     //subscriber
@@ -53,15 +54,12 @@ roomba_500driver_meiji::RoombaCtrl RoombaController::go_straight()
 roomba_500driver_meiji::RoombaCtrl RoombaController::turn_a_round()
 {
     roomba_500driver_meiji::RoombaCtrl control;
-    if(!(fabs(init_theta-theta)<0.01*M_PI))
-    {
-        control.cntl.linear.x=0.0;
-        control.cntl.angular.z=0.1;
-    }
-    else
-    {
+    if(theta-init_theta<=0)
+        turn_phase=1;
+    if((turn_phase==1)&&(theta-init_theta>0))
         phase=3;
-    }
+    control.cntl.linear.x=0.0;
+    control.cntl.angular.z=0.1;
     return control;
 }
 
