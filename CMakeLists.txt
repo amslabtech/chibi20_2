@@ -111,7 +111,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   # INCLUDE_DIRS include
-	LIBRARIES chibi20_2
+  #LIBRARIES chibi20_2
 #  CATKIN_DEPENDS roscpp rospy std_msg
 #  DEPENDS system_lib
 )
