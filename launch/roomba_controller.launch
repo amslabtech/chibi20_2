@@ -3,9 +3,15 @@
      <node pkg="roomba_500driver_meiji" name="roomba_test" type="main500"/ output="screen">
 
      <node pkg="hokuyo_node" name="hokuyo_node" type="hokuyo_node">
-	<pram name="serial_port" value="/dev/ttyACM0"/>
+	<param name="serial_port" value="/dev/ttyACM0"/>
     
      <node pkg="chibi20_2" name="chibi20_2" type="move"/>
+	<param name="hz" value="10.0" type="double"/>
+	<param name="sleeping_length" value="1.0" type="double"/>
+	<param name="phase" value="0" type="int"/>
+	<param name="theta" value="0.0" type="double"/>
+	<param name="init_theta" value="0.0" type="double"/>
+     </node>
 
      <node pkg="chibi20_2" name="chibi20_2" type="chibi20_2" output="screen">
 
