@@ -3,7 +3,7 @@
      <node pkg="roomba_500driver_meiji" name="roomba_test" type="main500"/ output="screen">
 
      <node pkg="hokuyo_node" name="hokuyo_node" type="hokuyo_node">
-	<pram name name="serial_port" value="/dev/ttyACM0"/ >
+	<pram name="serial_port" value="/dev/ttyACM0"/ >
      </node>
     
      <node pkg="chibi20_2" name="chibi20_2" type="chibi20_2" output="screen">
