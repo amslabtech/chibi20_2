@@ -33,14 +33,21 @@ int main (int argc, char **argv)
     roomba_500driver_meiji::RoombaCtrl control;
     control.mode = roomba_500driver_meiji::RoombaCtrl::DRIVE_DIRECT;
     if(!laser.ranges.empty()){
-      if(laser.ranges[360] >= 0.5){
+        float dist = 0;
+        int count = 0;
+     for(int i=-5; i<=5; i++) {
+      dist += (laser.ranges[540+i]);
+      count ++;
+     }
+     dist /= count; //count 10 is changeable
+      if(dist >= 0.6){
         control.cntl.linear.x = 0.1;
         control.cntl.angular.z=0.0;
       }else{
         control.cntl.linear.x = 0.0;
         control.cntl.angular.z = 0.0;
       }
-      cout << laser.ranges[360] << endl;
+      cout << dist << endl;
     }
     pub_control.publish(control);
     ros::spinOnce();
