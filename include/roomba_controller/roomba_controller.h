@@ -29,10 +29,10 @@ private:
         double theta;
         double init_theta;
         int turn_phase;
-            //for difine_laser_length
-            double average_length;
-            int center_number=540;
-            int alpha;
+        double run_length;
+        double average_length;
+        int center_number;
+        int alpha;
 
 
         //member
