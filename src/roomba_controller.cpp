@@ -10,6 +10,7 @@
     private_n.param("phase",phase,{0});
     private_n.param("theta",theta,{0});
     private_n.param("init_theta",init_theta,{0});
+    private_n.param("integrated_theta",integrated_theta,{0});
     private_n.param("turn_phase",turn_phase,{0});
     private_n.param("run_length",run_length,{1.0});
     private_n.param("average_length",average_length,{0});
@@ -59,10 +60,6 @@ roomba_500driver_meiji::RoombaCtrl RoombaController::go_straight()
 roomba_500driver_meiji::RoombaCtrl RoombaController::turn_a_round()
 {
     roomba_500driver_meiji::RoombaCtrl control;
-    if(init_theta>=2*M_PI*0.95)
-        init_theta-=2*M_PI*0.95;
-    if(init_theta<=0.01)
-        init_theta=0.01;
     if(theta<init_theta)
         turn_phase=1;
     if((turn_phase==1)&&(theta>init_theta))
@@ -71,6 +68,22 @@ roomba_500driver_meiji::RoombaCtrl RoombaController::turn_a_round()
     control.cntl.angular.z=0.1;
     return control;
 }
+
+roomba_500driver_meiji::RoombaCtrl RoombaController::turn_a_round2()
+{
+    roomba_500driver_meiji::RoombaCtrl control;
+    if(init_theta*theta<0)
+        integrated_theta+=theta+M_PI*2-init_theta;
+    else
+        integrated_theta+=theta-init_theta;
+    if(integrated_theta>=M_PI*2)
+        phase=3;
+    control.cntl.linear.x=0.0;
+    control.cntl.angular.z=0.1;
+    init_theta=theta;
+    return control;
+}
+
 
 roomba_500driver_meiji::RoombaCtrl RoombaController::laser_go()
 {
@@ -107,8 +120,8 @@ void RoombaController::process()
     {
         roomba_500driver_meiji::RoombaCtrl control;
         theta = tf::getYaw(odometry.pose.pose.orientation);
-        if(theta<0)
-            theta+= M_PI*2;
+        // if(theta<0)
+        //     theta+= M_PI*2;
         switch(phase)
         {
             case(0):
@@ -124,7 +137,8 @@ void RoombaController::process()
                 control=go_straight();
                 break;
             case(2):
-                control=turn_a_round();
+                // control=turn_a_round();
+                control=turn_a_round2();
                 break;
             case(3):
                 control=laser_go();
