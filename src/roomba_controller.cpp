@@ -11,6 +11,10 @@
     private_n.param("theta",theta,{0});
     private_n.param("init_theta",init_theta,{0});
     private_n.param("turn_phase",turn_phase,{0});
+    private_n.param("average_length",average_length,{0});
+    private_n.param("center_number",center_number,{540});
+    private_n.param("alpha",alpha,{5});
+
 
 
     //subscriber
@@ -68,7 +72,13 @@ roomba_500driver_meiji::RoombaCtrl RoombaController::laser_go()
     roomba_500driver_meiji::RoombaCtrl control;
     if(!laser.ranges.empty())
     {
-        if(laser.ranges[540]>=0.6)
+        average_length=0.0;
+        for(int i=center_number-alpha;i<center_number+alpha;i++)
+        {
+            average_length+=laser.ranges[i];
+        }
+        average_length/=2*alpha;
+        if(average_length>=0.5)
         {
             control.cntl.linear.x=0.1;
             control.cntl.angular.z=0;
@@ -117,6 +127,7 @@ void RoombaController::process()
         std::cout<< "odometry:" << odometry.pose.pose.position << std::endl;
         std::cout<<"init_odometry:"<<std::endl;
         std::cout << init_odometry.pose.pose.position << std::endl;
+        std::cout << "average_length:"<<average_length<<std::endl;
         loop_rate.sleep();
     }
 }
