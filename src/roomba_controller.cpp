@@ -11,7 +11,6 @@
     private_n.param("theta",theta,{0});
     private_n.param("init_theta",init_theta,{0});
     private_n.param("integrated_theta",integrated_theta,{0});
-    private_n.param("turn_phase",turn_phase,{0});
     private_n.param("run_length",run_length,{1.0});
     private_n.param("average_length",average_length,{0});
     private_n.param("center_number",center_number,{540});
@@ -58,18 +57,6 @@ roomba_500driver_meiji::RoombaCtrl RoombaController::go_straight()
 }
 
 roomba_500driver_meiji::RoombaCtrl RoombaController::turn_a_round()
-{
-    roomba_500driver_meiji::RoombaCtrl control;
-    if(theta<init_theta)
-        turn_phase=1;
-    if((turn_phase==1)&&(theta>init_theta))
-        phase=3;
-    control.cntl.linear.x=0.0;
-    control.cntl.angular.z=0.1;
-    return control;
-}
-
-roomba_500driver_meiji::RoombaCtrl RoombaController::turn_a_round2()
 {
     roomba_500driver_meiji::RoombaCtrl control;
     if(init_theta*theta<0)
@@ -137,8 +124,7 @@ void RoombaController::process()
                 control=go_straight();
                 break;
             case(2):
-                // control=turn_a_round();
-                control=turn_a_round2();
+                control=turn_a_round();
                 break;
             case(3):
                 control=laser_go();
@@ -154,7 +140,7 @@ void RoombaController::process()
         std::cout<<"theta:"<<theta<<std::endl;
         std::cout<<"init_theta:"<<init_theta<<std::endl;
         std::cout <<"phase:"<<phase << std::endl;
-        std::cout <<"turn_phase:"<<turn_phase << std::endl;
+        std::cout <<"integrated_theta:"<<integrated_theta << std::endl;
         std::cout << "average_length:"<<average_length<<std::endl;
         std::cout<<"moved_length:"<<sqrt(pow(init_odometry.pose.pose.position.x-odometry.pose.pose.position.x,2)+pow(init_odometry.pose.pose.position.y-odometry.pose.pose.position.y,2))<<std::endl;
         std::cout<<std::endl;
