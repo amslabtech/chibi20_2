@@ -14,7 +14,6 @@
         <param name="publish_multiecho" value="faulse"/>
     </node>
 
-
     <node pkg="chibi20_2" name="chibi20_2" type="roomba_controller" output="screen">
     	<param name="hz" value="50.0" type="double"/>
     	<param name="sleeping_length" value="3.0" type="double"/>
