@@ -21,7 +21,6 @@ private:
         roomba_500driver_meiji::RoombaCtrl go_straight();
         roomba_500driver_meiji::RoombaCtrl turn_a_round();
         roomba_500driver_meiji::RoombaCtrl laser_go();
-        roomba_500driver_meiji::RoombaCtrl turn_a_round2();
 
         //parameter
         double hz;
@@ -29,13 +28,11 @@ private:
         int phase;
         double theta;
         double init_theta;
-        int turn_phase;
         double run_length;
         double average_length;
         int center_number;
         int alpha;
-            //for turn_a_round2
-            double integrated_theta;
+        double integrated_theta;
 
 
         //member

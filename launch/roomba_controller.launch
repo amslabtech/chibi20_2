@@ -21,7 +21,6 @@
     	<param name="theta" value="0.0" type="double"/>
         <param name="init_theta" value="0.0" type="double"/>
         <param name="integrated_theta" value="0.0" type="double"/>
-        <param name="turn_phase" value="0" type="int"/>
         <param name="run_length" value="0.5" type="double"/>
         <param name="average_length" value="0.0" type="double" />
         <param name="center_number" value="540" type="int"/>
