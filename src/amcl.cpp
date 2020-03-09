@@ -8,16 +8,12 @@
 #include <random>
 #include <math.h>
 
-//乱数生成
-std::random_device rnd;
-std::mt19937 mt(rnd());
-std::uniform_real_distribution <> dist(0.0,1.0);
 
 class Particle
 {
 public:
     Particle();
-    void init(double,double,double);
+    void p_init(double,double,double);
     void motion();
     void measurement();
 
@@ -33,6 +29,9 @@ private:
 
     //parameter
     double weight;
+    float x_cov;
+    float y_cov;
+    float yaw_cov;
 
     //member
     nav_msgs::OccupancyGrid grid;
@@ -56,16 +55,53 @@ void Particle::laser_callback(const sensor_msgs::LaserScan::ConstPtr& lsr)
     laser = *lsr;
 }
 
-//Box-Muller法(1)
-double rand_normal()
+//乱数生成(0~1)
+float random()
 {
-    return sqrt(-2.0 * log(rand())) * cos(2.0*M_PI*rand());
+    static int flag;
+
+    if(flag == 0){
+        srand((unsigned int)time(NULL));
+        flag = 1;
+    }
+
+    return ((float)rand() + 1.0)/((float)RAND_MAX + 2.0);
 }
 
-//Box-Muller法(2)
-double rand_normal_mu_sigma(double mu,double sigma)
+//Box-Muller法
+float random_normal(float mu,float sigma)
 {
-    return mu + sigma * rand_normal();
+    float z = sqrt(-2.0*log(random())*sin(2.0*M_PI*random()));
+
+    return (mu + sigma*z);
+}
+
+Particle::Particle()
+{
+    pose.header.frame_id = "map";
+
+    pose.pose.position.x = 0.0;
+    pose.pose.position.y = 0.0;
+    quaternionTFToMsg(tf::createQuaternionFromYaw(0),pose.pose.orientation)    ;
+
+    weight = 1 / (double)N;
+}
+
+void Particle::p_set(double x,double y,double yaw)
+{
+    pose.pose.position.x = random_normal(x,x_cov);
+    pose.pose.position.y = random_normal(y,y_cov);
+    quaternionTFToMsg(tf::createQuaternionFromYaw(random_normal(yaw,yaw_cov),pose.pose.orientation);
+}
+
+void Particle::p_motion_updata(geometry_msgs::PoseStamped current,geometry_msgs)
+{
+    float dx;
+    float dy;
+    float dyaw;
+    float dist;
+
+    dx
 }
 
 int main(int argc,char **argv)
