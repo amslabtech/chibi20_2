@@ -28,20 +28,37 @@ private;
 nav_msgs::Odometry odometry;
 nav_msgs::Odometry init_odometry;
 nav_msgs::OcupancyGrid map;
-sensor_msgs::LaserScan laser
+sensor_msgs::LaserScan laser;
+geometry_msgs::PoseStamped estimated_pose;
+geometry_msgs::PoseStamped current_pose;
+geometry_msgs::PoseStamped previous_pose;
 geometry_msgs::Pose2D pose2d;
 geometry_msgs::PoseArray poses;
 
 std::vector<Particle> particle
 
-const int N;    //Particle
-float theta;    //Yaw
-bool get_map = false;
+int N;                      //Particleの数
+int center_number = 540;
+int alpha = 5;
+float theta;                //Yaw
+float x_sigma;
+float y_sigma;
+float yaw_sigma;
+float move_noise_x;         //noise
+float move_noise_y;         //noise
+float move_noise_yaw;       //noise
+double average_length;      //laserの長さ
+double l_length[10];
+bool get_map = false;       //mapを取得したかどうかの判定
+
+const float judge_value = 0.01;
 
 void map_callback(const nav_msgs::OccupancyGrid::ConstPtr& map)
 {
     map = *map;
 
+
+    /*
     for(int i = 0; i < N; i++){
         Particle p;
         do{
@@ -52,6 +69,20 @@ void map_callback(const nav_msgs::OccupancyGrid::ConstPtr& map)
         }
         poses.poses.push_back(p.pose.pose);
     }
+    */
+
+    for(int i = 0; i < N; i++){
+        Particle p;
+        do{
+            p.init(0.0,0.0,0.0);
+        }
+        while(grid_data[p.pose.pose.position.x,p.pose.pose.position.y] != 0){
+            particle.push_back(p);
+        }
+        //PoseArrayに格納
+        poses.poses.push_back(p.pose.pose);
+    }
+
     poses.header.frame_id = "map";
 
     get_map = true;
@@ -101,6 +132,7 @@ int grid_data(float x,float y)
     return data;
 }
 
+//Yaw取得
 float get_Yaw(geometry_msgs quaternion q)
 {
     double r;
@@ -133,6 +165,39 @@ float angle_diff(float a,float b)
     }
 }
 
+/正規分布
+float random_normal(float mu,float sigma)
+{
+    float z = 1/(sqrt(2.0*M_PI)*sigma)*exp(-pow((random()-mu),2)/(2*pow(sigma,2)));
+
+    return z;
+}
+
+//LiDARがデータを取得することのできる範囲
+float L_range()
+{
+    return;
+}
+
+//Particleの距離計算(何かLandmark見つける)
+double p_dist(float x,float y)
+{
+
+    return;
+}
+
+//更新するかしないかの判定
+bool judge_updata(geometry_msgs::PoseStamped current,geometry_msgs::PoseStamped previous)
+{
+    //judge_valueより移動していなかったら更新しない
+    if(sqrt(pow(current.pose.position.x - previous.pose.position.x,2) + pow(current.pose.position.y - previous.pose.position.y)) < judge_value){
+        return false;
+    }
+    else{
+        return true;
+    }
+}
+
 Particle::Particle()
 {
     pose.header.frame_id = "map";
@@ -140,18 +205,27 @@ Particle::Particle()
     pose.pose.position.x = 0.0;
     pose.pose.position.y = 0.0;
     quaternionTFToMsg(tf::createQuaternionFromYaw(0),pose.pose.orientation);
-    weight = 1 / (double)N;
+    weight = 1 / (float)N;
 }
 
 //Particleの初期化
-void Particle::p_init(int  width,int  height,float resolution,geometry_msgs::Pose origin)
+void Particle::p_init(float x,float y,float yaw)
 {
+    //random()のみでParticleをばらまく
+    /*
     pose.pose.position.x = random() * width  * resolution + origin.position.x;
     pose.pose.position.y = random() * height * resolution + origin.position.y;
     quaternionTFToMsg(tf::createQuaternionFromYaw(M_PI*(2*random()-1),pose.position.orientation);
+    */
+
+    //正規分布でParticleをばらまく(推定位置を引数)
+    pose.pose.position.x = random_normal(x,x_sigma);
+    pose.pose.position.y = random_normal(y,y_sigma);
+    quaternionTFToMsg(tf::createQuaternionFromYaw(random_normal(yaw    ,yaw_sigma),pose.pose.orientation);
+
 }
 
-//Particleの動き更新
+//Particleの動きを更新
 void Particle::p_motion_updata(geometry_msgs::PoseStamped current,geometry_msgs::PoseStamped previous)
 {
     double dx;
@@ -166,26 +240,30 @@ void Particle::p_motion_updata(geometry_msgs::PoseStamped current,geometry_msgs:
 
     dist = sqrt(dx*dx + dy*dy);
 
-    if(dist < 0.01){
-        delta = 0.0;
-
 }
 
 //Particleの尤度の計算
 void Particle::p_measurement_updata()
 {
+    if(!laser.ranges.empty()){
+        average_length = 0.0;
+        for(int i = center_number - alpha; i < center_nunber + alpha; i++){
+            average_length += laser.ranges[i];
+        }
+        average_length /= 2*alpha;
+
+        //Particleの情報と比較して尤度を算出
+        /*  --- insert code ---
+         */
+
 }
 
-//Roombaのオドメトリ情報をもとにParticleを移動
-void Particle::p_move()
+//Particleを(x,y,yaw)へ移動
+void Particle::p_move(float x,float y,float yaw)
 {
-    pose.pose.position.x += odometry.pose.pose.position.x * cos(get_Yaw(pose.pose.position.orientation)) - odometry.pose.pose.position.y * sin(get_Yaw(pose.pose.position.orientation));
-    pose.pose.position.y += odometry.pose.pose.position.x * sin(get_Yaw(pose.pose.position.orientation)) + odometry.pose.pose.position.y * cos(get_Yaw(pose.pose.position.orientation));
-    quaternionTFToMsg(,pose.pose.orientation);
-
-    init_odometry.pose.pose.position.x = odometry.pose.pose.position.x;
-    init_odometry/pose.pose.position.y = odometry.pose.pose.position.y;
-
+    pose.pose.position.x += x * cos(get_Yaw(pose.pose.position.orientation)) - y * sin(get_Yaw(pose.pose.position.orientation));
+    pose.pose.position.y += x * sin(get_Yaw(pose.pose.position.orientation)) + y * cos(get_Yaw(pose.pose.position.orientation));
+    quaternionTFToMsg(tf::createQuaternionFromYaw(get_yaw(pose.pose.orientation)),pose.pose.orientation);
 }
 
 int main(int argc,char **argv)
@@ -194,19 +272,81 @@ int main(int argc,char **argv)
     ros::NodeHandle nh;
     ros::NodeHandle private_nh("~");
 
+    //Subscriber
     ros::Subscriber map_sub = nh.subscribe("/map",100,map_callback);
     ros::Subscriber lsr_sub = nh.subscribe("/scan",100,laser_callback);
     ros::Subscriber odo_sub = nh.subscribe("/roomba/odometry",100,odometry_callback);
 
+    //Publisher
     ros::Publisher pose1_sub = nh.advertise<geometry_msgs::Pose2D>("/chibi20/pose",100);
     ros::Publisher pose2_sub = nh.advertise<geometry_msgs::Pose2D>("/poses",100);
 
     private_nh.getParam("N",N);
-    std::cout << "N: " << N << std::endl;
+
+    tf::TransformBroadcaster broadcaster;
+    tf::TransformListener listener;
+    tf::StampedTransform temp_tf_stamped;
+    temp_tf_stamped = tf::StampedTransform(tf::Transform(tf::createQuaternionFromYaw(0.0),tf::Vector3(0.0,0.0,0.0)),ros::Time::now(),"map","odom");
+
+    //位置の初期化
+    current_pose.pose.position.x = 0.0;
+    current_pose.pose.position.y = 0.0;
+    quaternionTFToMsg(tf::createQuaternionFromYaw(0.0),current.pose.orientation);
+    estimated_pose = current_pose;
+    previous_pose  = current_pose;
 
     ros::Rate rate(10.0);
     while(ros::ok()){
         if(get_map){
+            tf::StampedTransform trans;
+            transform = tf::StampedTransform(tf::Transform(tf::createQuaternionFromYaw(0.0),tf::Vector3(0.0,0.0,0.0)),ros::Time::now(),"odom","base_link");
+            try{
+                //base_linkからodomへ
+                listener.waitForTransform("odom","base_link",ros::Time(0),ros::Duration());
+                listener.lookupTransform("odom","base_link",ros::Time(0),trans);
+            }
+            catch(tf::TransformException &ex){
+                //見つからなかった場合
+                ROS_ERROR("%s", ex.what());
+                ros::Duration(1.0).sleep();
+            }
+
+            //current_poseへ格納
+            current_pose.pose.position.x = trans.getOrigin().x();
+            current_pose.pose.position.y = trans.getOrigin().y();
+            quaternionTFToMsg(trans.getRotation(),current_pose.pose.orientation);
+
+            //Particleをばらまく
+            /*
+                --- insert code ---
+            */
+
+            //Particleの動きを更新
+            /*
+                --- insert code ---
+             */
+
+            //尤度をResamplingした結果から位置推定(estimated_pose)
+            /*
+                --- insert code ---
+            */
+
+            //estimated_pose(Pose) >> Pose2D
+            /*
+                --- insert code ---
+             */
+
+            //Pose2DでPublish
+            /*
+                --- insert code ---
+                pose2d.x     =;
+                pose2d.y     =;
+                pose2d.theta =;
+
+                pose1_sub.publish(pose2d);
+                pose2_sub.publish(pose2d);
+             */
+
     }
     ros::spinOnce();
     rate.sleep();

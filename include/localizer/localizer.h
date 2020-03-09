@@ -27,16 +27,25 @@ private:
     void laser_callback(const sensor_msgs::LaserScan::ConstPtr&);
     void odometry_callback(const nav_msgs::Odometry::ConstPtr&);
 
-    float random(); //random function
-    int index();
-    int grid_data();
-    float get_Yaw();
+    float random();                             //random function(0~1)
+    float random_normal(float mu,float sigma)   //正規分布
+    int index();                                //indexの計算
+    int grid_data();                            //Griddataの取得
+    float get_Yaw();                            //Yaw取得
+    bool judge_updata(geometry_msgs::PoseStamped current,geometry_msgs::PoseStamped previous);  //更新するかしないかの判断
 
     //parameter
-    int N;          //Particleの数
-    double weight;  //尤度
-    float theta;
-    bool get_map;
+    int N;                  //Particleの数
+    float weight;           //尤度
+    float theta;            //Yaw
+    float x_sigma;
+    float y_sigma;
+    float yaw_sigma;
+    float move_noise_x;
+    float move_noise_y;
+    float move_noise_yaw;
+    double average_length;  //LiDARからの情報
+    bool get_map;           //mapを取得したどうかの判定
 
     //member
     ros::NodeHandle nh;
@@ -49,11 +58,12 @@ private:
     ros::Publisher pub_GPP;
     ros::Publisher pub_LMC;
 
-    geometry_msgs::PoseStamped pose;
+    geometry_msgs::PoseStamped estimated_pose;
+    geometry_msgs::PoseStamped current_pose;
+    geometry_msgs::PoseStamped previous_pose;
     geometry_msgs::Pose2D pose2d;
     geometry_msgs::PoseArray poses;
     nav_msgs::Odometry odometry;
-    nav_msgs::Odometry init_odometry;
     nav_msgs::OcupancyGrid map;
     sensor_msgs::LaserScan laser;
 
