@@ -11,6 +11,37 @@
 #include "geometry_msgs/PointStamped.h"
 #include "geometry_msgs/PoseWithCovarianceStamped.h"
 
+
+struct State{
+    double x;
+    double y;
+    double yaw;
+    double v;
+    double omega;
+};
+
+//struct Speed{
+//    double v;
+//    double omega;
+//};
+
+struct Goal{
+    double x;
+    double y;
+};
+
+struct LaserData{
+    double angle;
+    double range;
+};
+
+struct Dynamic_Window{
+    double min_v;
+    double max_v;
+    double min_omega;
+    double max_omega;
+};
+
 class DWA
 {
 public:
@@ -49,7 +80,25 @@ private:
     double robot_radius;
 
     //member
+    ros::NodeHandle roomba_ctrl_pub;
+    ros::NodeHandle roomba_odometry_sub;
+    ros::NodeHandle scan_laser_sub;
+    ros::NodeHandle est_pose;
+    ros::NodeHandle target_pose;
+    ros::NodeHandle whiteline;
+    ros::NodeHandle private_nh;
+
+    ros::Subsciber laser_sub;
+    ros::Subsciber est_pose_sub;
+    ros::Subsciber target_pose_sub;
+    ros::Subsciber whiteline_sub;
+
+    ros::Publisher ctrl_pub;
+
+  //ros::Rate loop_rate();
+
     geometry_msgs::PoseWithCovarianceStamped est_pose_msg;
+
 };
 
 #endif //_DWA_H
