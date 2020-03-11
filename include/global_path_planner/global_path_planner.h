@@ -3,8 +3,8 @@
 
 #include "ros/ros.h"
 #include "nav_msgs/OccupancyGrid.h"
-#include "geometry_msgs/Pose2D"
-#include "nav_msgs/Path"
+#include "geometry_msgs/Pose2D.h"
+#include "nav_msgs/Path.h"
 
 struct Costs
 {
@@ -24,6 +24,7 @@ class A_Star_Planner
 {
 public:
     A_Star_Planner();
+    void process();
 
 private:
     //method
@@ -31,23 +32,41 @@ private:
     void pose_callback(const geometry_msgs::Pose2D::ConstPtr& );
     void path_creator();
     void clean_lists();
+    float huristic(const int&,const int&);
+    void define_starting_grid();
+    void define_goal_grid();
+    void open_around();
+    void update_close_list();
+    void update_searching_grid();
+    void check_goal();
+    void trace_dealer();
 
 
 
     //parameter
+    static const int row=4000;
+    static const int column=4000;
     Coordinate goal_grid;
     Coordinate searching_grid;
-    Coordinate landmark[];
+    Coordinate landmark[4];
+    int Hz;
     int wall_border;
     int wall_cost;
     const int move_cost[4]={1,1,1,1};//左上右下の順番
     int grid_map[row][column];
     Costs open_list[row][column];
     Costs close_list[row][column];
+    bool map_received=false;
     bool reached_goal=false;
+    bool reached_start=false;
+
+
     //member
-    static const int row=4000;
-    static const int column=4000;
+    // static const int row=4000;
+    // static const int column=4000;
+    ros::NodeHandle n;
+    ros::NodeHandle private_n;
+    ros::Publisher pub_path;
     nav_msgs::OccupancyGrid prior_map;//元マップデータ格納
     nav_msgs::OccupancyGrid updated_map;//経路封鎖時にLocalMapCreaterから受取
     geometry_msgs::Pose2D current_pose;//経路封鎖時のスタート位置用
