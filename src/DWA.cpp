@@ -141,6 +141,16 @@ double calc_to_goal_cost(std::vector<State>& traj, Goal goal, State roomba) //me
 
 
 
+    double goal_magnitude = std::sqrt(pow(goal.x - traj.back().x, 2) + pow(goal.y - traj.back().y, 2));
+    double traj_magnitude = std::sqrt(pow(traj.back().x, 2) + pow(traj.back().y, 2));
+    double dot_product = (goal.x - traj.back().x) * traj.back().x + (goal.y - traj.back().y) * traj.back().y;
+    double error = dot_product / (goal_magnitude * traj_magnitude);
+
+    if(error < -0.8){
+        return 0;
+    }
+
+    double error_angle = std::acos(error);
 
 
 
@@ -151,172 +161,175 @@ double calc_to_goal_cost(std::vector<State>& traj, Goal goal, State roomba) //me
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+    return to_goal_cost_gain * error_angle;
 }
 
-double calc_goal_dist(std::vector<State>& traj, Goal goal) //method
+double calc_goal_dist(std::vector<State>& traj, Goal goal)
 {
+    double x = goal.x - traj.back().x;
+    double y = goal.y - traj.back().y;
+    double dist = std::sqrt(pow(x,2) + pow(y,2));
 
-
-
-
-
+    return dist;
 }
 
-double calc_speed_cost(std::vector<>State traj) //method
+double calc_speed_cost(std::vector<State> traj)
 {
+    double error_speed = max_speed - traj.back().v;
 
-
+    return speed_cost_gain * error_speed;
 }
 
-double calc_obsatcle_cost(State roomba, std::vector<State>& traj) //method
+double calc_obstacle_cost(State roomba, std::vector<State> traj)
 {
+    int skip_k = 2;
+    int skip_i = 10;
+    double min_r = std::numeric_limits<double>::infinity();
+    double infinity = std::numeric_limits<double>::infiity();
+    double x_traj;
+    double y_traj;
+    double u_obstacle = 0.0;
+    double v_obstacle = 0.0;
+    double x_roomba = roomba.x;
+    double y_roomba = roomba.y;
+    double r = 0.0;
+    double angle_obstacle;
+    double range_obstacle;
+    double x_obstacle;
+    double xx_obstacle;
+    double y_obsatcle;
+    double yy_obsatcle;
+
+    for(int k = 0; k < traj.size(); k += skip_k) {
+        x_traj = traj[k].x;
+        y_traj = traj[k].y;
+
+        for(int l = 0; l < N; l += skip_l) {
+
+            r = 0.0;
+
+            angle_obstacle = Ldata[l].angle;
+            range_obsatcle = Ldata[l].range;
+
+
+            if(range_obsatcle < robot_radius) {
+                continue;
+            }
+
+            if(range_obsatcle > 30.0) {
+                range_obsatcle = 30.0;
+            }
+
+            u_obsatcle = range_obsatcle * std::cos(angle_obsatcle);
+            v_obsatcle = range_obsatcle * std::sin(angle_obsatcle);
+            xx_obstacle = (u_obsatcle * std::cos(roomba.yaw)) - (v_obstacle * std::sin(roomba.yaw));
+            yy_obstacle = (u_obsatcle * std::sin(roomba.yaw)) - (v_obstacle * std::cos(roomba.yaw));
+            x_obstacle = x_roomba + xx_obstacle;
+            y_obstacle = y_roomba + yy_obstacle;
+            r = std::sqrt(pow(x_obstacle - x_traj, 2.0) + pow(y_obstacle - y_traj, 2.0));
 
 
 
 
 
+            if(r <= robot_radius) {
+                return infinty;
+            }
 
+            if(min_r >= r) {
+                min_r = r;
+            }
+        }
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return 1 / min_r;
 }
 
 void calc_final_input(State roomba, Speed& u, Dynamic_window& dw, Goal goal) //method
 {
+    double min_cost = 10000.0;
+    Speed min_u = u;
+    min_u.v = 0.0;
+    std::vector<State> traj;
+    double to_goal_cost = 0.0;
+    double goal_dist = 0.0;
+    double speed_cost = 0.0;
+    double ob_cost = 0.0;
+    double final_cost = 0.0;
+    double center = (dw.max_omega + dw.min_omega) / 2;
+
+    for(double i = dw.max_v; i > dw.min_v; i -= v_reso) {
+        for(double j = 0; (center + j) < dw.max_omega; j += yawrate_reso) {
+            calc_trajectory(traj, roomba, i, center + j);
+            to_goal_cost = calc_to_goal(traj, goal, romba);
+            goal_dist = 3.0 * calc_to_goal_cost(traj, goal);
+
+            ob_cost = calc_obsatcle_cost(roomba, traj);
+
+
+            final_cost = to_goal_cost + goal_dist + speed_cost + ob_cost;
+
+            if(min_cost >= final_cost) {
+                min_cost = final_cost;
+                min_u.v = i;
+                min_u.omega = center + j;
+            }
+
+            calc_trajectory(traj roomba, i, center - j);
+            to_goal_cost = calc_to_goal_cost(traj, goal, roomba);
+            goal_dist = 3.0 * calc_goal_dist(traj, goal);
+
+            ob_cost = calc_obstacle_cost(roomba, traj);
+
+
+            final_cost = to_goal_cost + goal_dist + speed_cost + ob_cost;
+
+            if(min_cost >= final_cost) {
+                min_cost = final_cost;
+                min_u.v = i;
+                min_u.omega = center - j;
+            }
+        }
+    }
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    u = min_u;
 }
 
 void dwa_control(State& roomba, Speed& u, Goal goal, Dynamic_Window dw) //method
 {
 
+    calc_dynamic_window(dw, roomba);
 
-
-
+    calc_final_input(roomba, u, dw, goal);
 }
 
 void lasercallback(const sensor_msgs::LaserScan::ConstPtr& msg) //method
 {
+    sensor_msgs::LaserScan _msg = *msg;
 
-
-
-
-
-
+    for(int i=0; i<N; i;;) {
+        Ldata[i].angle = msg.angle_min + i*_msg.angle_increment;
+        Ldata[i].range = _msg.range[i];
+    }
 }
 
 int main(int argc, char **argv)
 {
+    ros::init(argc, argv, "dwa");
+    ros::NodeHandle roomba_ctrl_pub;
+    ros::NodeHandle roomba_odometry_sub;
+    ros::NodeHandle scan_laser_sub;
+    ros::NodeHandle est_pose;
+    ros::NodeHandle target_pose;
+    ros::NodeHandle whiteline;
+    ros::NodeHandle private_nh("~");
+
+    private_nh.getParam("max_speed", max_speed);
+
+
+
 
 
 
