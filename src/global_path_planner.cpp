@@ -14,6 +14,7 @@ void A_Star_Planner::map_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 {
     nav_msgs::OccupancyGrid _msg=*msg;
     //std::cout<<"map received"<<std::endl;
+    map_received=true;
     for(int i=0;i<row;i++)
     {
         for(int j=0;j<column;j++)
@@ -31,7 +32,7 @@ void A_Star_Planner::pose_callback(const geometry_msgs::Pose2D::ConstPtr& msg)
      current_pose=*msg;
 }
 
-void A_Star_Planner::clean_close_list()
+void A_Star_Planner::clean_lists()
 {
     for(int i=0;i<row;i++)
     {
@@ -86,7 +87,7 @@ void A_Star_Planner::open_around()
     if(searching_grid.y<column-1)
     {
         open_list[searching_grid.x][searching_grid.y+1].g=open_list[searching_grid.x][searching_grid.y].g+move_cost[1];
-        open_list[searching_grid.x][searching_grid.y+1].f=open_list[searching_grid.x][searching_grid.y+1].g+huristic(searching_grid,searching_grid.y+1);
+        open_list[searching_grid.x][searching_grid.y+1].f=open_list[searching_grid.x][searching_grid.y+1].g+huristic(searching_grid.x,searching_grid.y+1);
         open_list[searching_grid.x][searching_grid.y+1].dealer_x=searching_grid.x;
         open_list[searching_grid.x][searching_grid.y+1].dealer_y=searching_grid.y;
         if(grid_map[searching_grid.x][searching_grid.y+1]>wall_border)
@@ -114,7 +115,7 @@ void A_Star_Planner::open_around()
     }
 }
 
-void A_Star_Planner::close_delar()
+void A_Star_Planner::update_close_list()
 {
     close_list[searching_grid.x][searching_grid.y].g=open_list[searching_grid.x][searching_grid.y].g;
     close_list[searching_grid.x][searching_grid.y].f=open_list[searching_grid.x][searching_grid.y].f;
@@ -155,7 +156,7 @@ void A_Star_Planner::update_searching_grid()
     if(next_grid.dealer_x==-1||next_grid.dealer_y==-1)
     {
         std::cout<<"cannot make gloabal path"<<std::endl;
-        exit;
+        std::exit(0);
     }
     else
     {
@@ -164,22 +165,50 @@ void A_Star_Planner::update_searching_grid()
     }
 }
 
+void A_Star_Planner::trace_dealer()
+{
+    reached_start=false;
+    global_path.poses[0].pose.position.x=goal_grid.x;
+    global_path.poses[0].pose.position.x=goal_grid.y;
+    global_path.poses[1].pose.position.x=open_list[goal_grid.x][goal_grid.y].dealer_x;
+    global_path.poses[1].pose.position.y=open_list[goal_grid.x][goal_grid.y].dealer_y;
+   // while(!reached_start)
 
+}
 
 void A_Star_Planner::path_creator()
 {
     clean_lists();
     define_starting_grid();
     define_goal_grid();
+    while(!reached_goal)
+    {
+        open_around();
+        update_close_list();
+        update_searching_grid();
+        check_goal();
+    }
+    while(!reached_start)
+    {
+        trace_dealer();
+        // update_path();
+        // check_start();
+    }
 
-    open_around();
-    close_dealer();
-    check_goal();
-    update_searching_grid();
 
 
+}
 
-
+void A_Star_Planner::process()
+{
+    ros::Rate loop_rate(Hz);
+    if(map_received)
+    {
+        path_creator();
+        pub_path.publish(global_path);
+        map_received=false;
+    }
+    loop_rate.sleep();
 }
 
 int main (int argc, char **argv)

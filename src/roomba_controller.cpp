@@ -61,6 +61,7 @@ roomba_500driver_meiji::RoombaCtrl RoombaController::turn_a_round()
     roomba_500driver_meiji::RoombaCtrl control;
     if(init_theta*theta<0)
         // integrated_theta+=theta+M_PI*2-init_theta;
+        integrated_theta+=0;
     else
         integrated_theta+=theta-init_theta;
     if(integrated_theta>=M_PI*2)
