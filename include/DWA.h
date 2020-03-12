@@ -67,7 +67,7 @@ private:
     double max_speed;
     double min_speed;
     double max_yawrate;
-    double max_acccel;
+    double max_accel;
     double max_drawrate;
     double v_reso;
     double yawrate_reso;
