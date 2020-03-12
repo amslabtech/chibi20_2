@@ -11,7 +11,7 @@
 double max_speed;
 double min_speed;
 double max_yawrate;
-double max_acccel;
+double max_accel;
 double max_dyawrate;
 double v_reso;
 double yawrate_reso;
@@ -97,7 +97,7 @@ void calc_dynamic_window(Dynamic_Window& dw, State& roomba) //method
                                     max_yawrate};
 
     Dynamic_Window Vd = {roomba.v -(max_accel * dt)},
-                                    roomba.v + (max_acccel * dt),
+                                    roomba.v + (max_accel * dt),
                                     roomba.omega - (max_dyawrate * dt),
                                     roomba_omega + (max_dyawrate * dt);
 
@@ -247,7 +247,7 @@ double calc_obstacle_cost(State roomba, std::vector<State> traj)
 
 void calc_final_input(State roomba, Speed& u, Dynamic_window& dw, Goal goal) //method
 {
-    double min_cost = 10000.0;
+    double min_cost = 100000000.0;
     Speed min_u = u;
     min_u.v = 0.0;
     std::vector<State> traj;
@@ -327,6 +327,70 @@ int main(int argc, char **argv)
     ros::NodeHandle private_nh("~");
 
     private_nh.getParam("max_speed", max_speed);
+    private_nh.getParam("min_speed", min_speed);
+    private_nh.getParam("max_yawrate", max_yawrate);
+    private_nh.getParam("max_accel", max_accel);
+    private_nh.getParam("max_dyawrate" max_dyawrate);
+    private_nh.getParam("v_reso", v_reso);
+    private_nh.getParam("yawrate_reso", yawrate_reso);
+    private_nh.getParam("dt", dt);
+    private_nh.getParam("predict_time", predict_time);
+    private_nh.getParam("to_goal_cost_gain", to_goal_cost_gain);
+    private_nh.getParam("speed_cost_gain", speed_cost_gain);
+    private_nh.getParam("robot_radius", robot_radius);
+    private_nh.getParam("roomba_v_gain", roomba_v_gain);
+    private_nh.getParam("roomba_omega_gain", roomba_omega_gain);
+
+    ros::Publisher ctrl_pub = roomba_ctrl_pub.advertise<roombs_500driver_meiji::RoombaCtrl>("roomba/control", 1);
+    ros::Subscriber laser_sub = scan_laser_sub.subscribe("scan", 1, lasercallback);
+    ros::Subscriber est_pose_sub = est_pose_subscribe("chibi20_2/estimated_pose", 1, estpose_callback); //look for chibi20_2/estimated_pose
+    ros::Subscriber target_pose_sub = target_pose_subscribe("chibi20_2/target", 1, target_callback); //look for chibi20_2/target
+    ros::Subscriber whiteline_sub = whiteline.subscribe("whiteline", 1, whiteline_callback);
+    ros::Rate loop_rate(10);
+
+    roomba_500driver_meiji::RoombaCtrl msg;
+
+    msg.mode = 11;
+
+    State roomba ={0.0, 0.0, 0.0, 0.0. 0.0};
+    // {x, y, yaw,v, omega}
+    Speed u = {0.0 0.0};
+    Dynamic_Window dw = {0.0, 0.0, 0.0, 0.0};
+    double yaw = 0.0;
+
+    while(ros::ok())
+    {
+    ros::spinOnce();
+
+    //motion(roomba, u);
+    roomba.yaw = tf::getYaw(est_pose_msg.pose.pose.orientation);
+    roomba.v = u.v;
+    roomba.omega = u.omega;
+    roomba.x = est_pose_msg.pose.pose.position.x;
+    roomba.y = est_pose_msg.pose.pose.position.y;
+
+    dwa_control(roomba, u, goal, dw);
+
+    msg.cntl.linear.x = roomba_v_gain * u.omega / max_yawrate;
+    if(fabs(msg.cntl.angular.z) < 0.13) { //fabs is absolute value
+        if(-0.13 < msg.cntl.angular.z && msg.cntl.angular.z <-0.5) {
+            msg.cntl.angular.z = -0.13;
+        }
+        else if(0.5 < msg.cntl.angular.z && msg.cntl.angular.z < 0.13) {
+            msg.cntl.angular.z = 0.13;
+        }
+        else{
+            msg.cnntl.angular.z = 0.0;
+        }
+    }
+
+    while()
+
+
+
+
+
+
 
 
 
