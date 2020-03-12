@@ -36,6 +36,7 @@ private:
     void define_starting_grid();
     void define_goal_grid();
     void open_around();
+    int grid_patern(const int&,const int&);
     void update_close_list();
     void update_searching_grid();
     void check_goal();
@@ -49,6 +50,7 @@ private:
     Coordinate goal_grid;
     Coordinate searching_grid;
     Coordinate landmark[4];
+    Coordinate tracing_grid;
     int Hz;
     int wall_border;
     int wall_cost;
@@ -59,6 +61,8 @@ private:
     bool map_received=false;
     bool reached_goal=false;
     bool reached_start=false;
+    float proto_g;
+    float proto_f;
 
 
     //member
@@ -67,6 +71,8 @@ private:
     ros::NodeHandle n;
     ros::NodeHandle private_n;
     ros::Publisher pub_path;
+    ros::Subscriber sub_map;
+    ros::Subscriber sub_pose;
     nav_msgs::OccupancyGrid prior_map;//元マップデータ格納
     nav_msgs::OccupancyGrid updated_map;//経路封鎖時にLocalMapCreaterから受取
     geometry_msgs::Pose2D current_pose;//経路封鎖時のスタート位置用
