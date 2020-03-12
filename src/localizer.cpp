@@ -1,5 +1,6 @@
 #include "ros/ros.h"
 #include "nav_msgs/OccupancyGrid.h"
+#include "nav_msgs/Odometry.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/PoseArray.h"
 #include "geometry_msgs/Pose.h"
@@ -15,20 +16,21 @@ class Particle
 {
 public:
     Particle();
-    void p_init(float x,float y,float yaw,float sigma_x,float sigma_y,float sigma_yaw);
-    void p_motion_updata();
+    void p_init(double,double,double,double,double,double);
+    void p_motion_updata(geometry_msgs::PoseStamped,geometry_msgs::PoseStamped);
     void p_measurement_updata();
-    void p_move();
+    void p_move(double,double,double);
 
     geometry_msgs::PoseStamped pose;
 
-private;
     double weight;
+
+private:
 };
 
 nav_msgs::Odometry odometry;
 nav_msgs::Odometry init_odometry;
-nav_msgs::OcupancyGrid map;
+nav_msgs::OccupancyGrid map;
 sensor_msgs::LaserScan laser;
 geometry_msgs::PoseStamped estimated_pose;
 geometry_msgs::PoseStamped current_pose;
@@ -36,14 +38,14 @@ geometry_msgs::PoseStamped previous_pose;
 geometry_msgs::Pose2D pose2d;
 geometry_msgs::PoseArray poses;
 
-std::vector<Particle> particles
+std::vector<Particle> particles;
 
-int N;                      //Particleの数
+int N = 1000;               //Particleの数
 int max_index;
 float init_x;               //初期位置x
 float init_y;               //初期位置y
 float init_yaw;             //初期位置yaw
-float init_x_sigama;
+float init_x_sigma;
 float init_y_sigma;
 float init_yaw_sigma;
 float MAX_Range;
@@ -62,7 +64,8 @@ float move_noise_yaw;       //noise
 float judge_distance_value;
 float judge_angle_value;
 
-double average_weight;      //尤度の平均
+double weight_sum = 0.0;    //尤度の合計
+double weight_average;      //尤度の平均
 double weight_slow = 0.0;
 double weight_fast = 0.0;
 double alpha_slow;
@@ -74,10 +77,11 @@ bool updata_flag = false;   //更新するかどうかの判定
 std::random_device seed;
 std::mt19937 engine(seed());
 
-void map_callback(const nav_msgs::OccupancyGrid::ConstPtr& map)
-{
-    map = *map;
+double get_Yaw(const geometry_msgs::Quaternion);
 
+void map_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
+{
+    map = *msg;
 
     /*
     for(int i = 0; i < N; i++){
@@ -98,9 +102,9 @@ void map_callback(const nav_msgs::OccupancyGrid::ConstPtr& map)
         p.p_init(init_x,init_y,init_yaw,init_x_sigma,init_y_sigma,init_yaw_sigma);
 
         geometry_msgs::Pose p_pose;
-        p_pose.pose.position.x = p.pose.pose.position.x;
-        p_pose.pose.position.y = p.pose.pose.position.y;
-        p_pose.pose.position.z = 0.0;
+        p_pose.position.x = p.pose.pose.position.x;
+        p_pose.position.y = p.pose.pose.position.y;
+        p_pose.position.z = 0.0;
         quaternionTFToMsg(tf::createQuaternionFromYaw(get_Yaw(p.pose.pose.orientation)),p_pose.orientation);
 
         //particlesに格納
@@ -115,12 +119,12 @@ void map_callback(const nav_msgs::OccupancyGrid::ConstPtr& map)
     get_map = true;
 }
 
-void laser_callback(const sensor_msgs::LaserScan::ConstPtr& lsr)
+void laser_callback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
-    laser = *lsr;
+    laser = *msg;
 }
 
-void odometry_callback(const nav_msgs::Odomenry::ConstPtr& odo)
+void odometry_callback(const nav_msgs::Odometry::ConstPtr& odo)
 {
     odometry = *odo;
 }
@@ -148,7 +152,7 @@ int index(float x,float y)
     int index_y;
 
     index_x = floor(x - map.info.origin.position.x) / map.info.resolution;
-    index_y = floor(y - map.info.origin/position.y) / map.info.resolution;
+    index_y = floor(y - map.info.origin.position.y) / map.info.resolution;
     index   = index_x + index_y * map.info.width;
 
     return index;
@@ -162,36 +166,33 @@ int grid_data(float x,float y)
 }
 
 //Yaw取得
-float get_Yaw(geometry_msgs quaternion q)
+double get_Yaw(geometry_msgs::Quaternion q)
 {
     double r;
     double p;
     double y;
 
-    tf::Quaternion quat(q.x,q.y,q.z);
+    tf::Quaternion quat(q.x,q.y,q.z,q.w);
     tf::Matrix3x3(quat).getRPY(r,p,y);
 
-    return y
+    return y;
 }
 
 //角度差の計算
-float angle_diff(float a,float b)
+double angle_diff(double a,double b)
 {
-    float a_ang = atan2(sin(a),cos(a));
-    float b_ang = atan2(sin(b),cos(b));
+    double a_angle = atan2(sin(a),cos(a));
+    double b_angle = atan2(sin(b),cos(b));
 
-    float d1 = a-b;
-    float d2 = 2*M_PI - fabs(d1);
+    double d1 = a_angle-b_angle;
+    double d2 = 2*M_PI - fabs(d1);
 
-    if(d1 > 0){
-        d2 *= -1.0;
-    }
-    else if(fabs(d1) < fabs(d2)){
+    if(fabs(d1) < fabs(d2))
         return d1;
-    }
-    else{
+    else if(d1 > 0)
+        return -d2;
+    else
         return d2;
-    }
 }
 
 /*  --- いらない(一応残しとく) ---
@@ -204,23 +205,27 @@ float random_normal(float mu,float sigma)
 }
 */
 
-//Rangeの更新
-float get_Range(float x,float y,float yaw)
+//Range(particleの存在範囲)の更新
+double get_Range(double x,double y,double yaw)
 {
     int cx_0;
     int cy_0;
     int cx_1;
     int cy_1;
+    int cx;
+    int cy;
+    int dx;
+    int dy;
     int xstep;
     int ystep;
     int error;
     bool judge = false;
 
-    cx_0 = (int)((x - map.info.origin.position.x)/map.info.resolution);
-    cy_0 = (int)((y - map.info.origin.position.y)/map.info.resolution);
+    cx_0 = (x - map.info.origin.position.x)/map.info.resolution;
+    cy_0 = (y - map.info.origin.position.y)/map.info.resolution;
 
-    cx_1 = (int)((x + MAX_Range*cos(yaw) - map.info.origin.position.x)/map.info.resolution);
-    cy_1 = (int)((y + MAX_Range*sin(yaw) - map.info.origin.position.y)/map.info.resolution);
+    cx_1 = (x + MAX_Range*cos(yaw) - map.info.origin.position.x)/map.info.resolution;
+    cy_1 = (y + MAX_Range*sin(yaw) - map.info.origin.position.y)/map.info.resolution;
 
     if(fabs(cx_1 - cx_0) < fabs(cy_1 - cy_0))
         judge = true;
@@ -253,12 +258,12 @@ float get_Range(float x,float y,float yaw)
         ystep = -1;
 
     if(judge){
-        if(cy < 0 || cy > map.info.width || cx < 0 || cx > map.info.height || map.data[cx*map.info.width + cy] != 0){
+        if(cy < 0 || cy > (int)map.info.width || cx < 0 || cx > (int)map.info.height || map.data[cx*(int)map.info.width + cy] != 0){
             return sqrt(pow((cx - cx_0),2) + pow((cy - cy_0),2)) * map.info.resolution;
         }
     }
     else{
-        if(cx < 0 || cx > map.info.width || cy < 0 || cy > map.info.height || map.data[cy*map.info.width + cx] != 0){
+        if(cx < 0 || cx > (int)map.info.width || cy < 0 || cy > (int)map.info.height || map.data[cy*(int)map.info.width + cx] != 0){
             return sqrt(pow((cx - cx_0),2) + pow((cy - cy_0),2)) * map.info.resolution;
         }
     }
@@ -271,12 +276,12 @@ float get_Range(float x,float y,float yaw)
             error -= dx;
         }
         if(judge){
-            if(cy < 0 || cy > map.info.width || cx < 0 || cx > map.info.height || map.data[cx*map.info.width + cy] != 0){
+            if(cy < 0 || cy > (int)map.info.width || cx < 0 || cx > (int)map.info.height || map.data[cx*(int)map.info.width + cy] != 0){
                 return sqrt(pow((cx - cx_0),2) + pow((cy - cy_0),2)) * map.info.resolution;
             }
         }
         else{
-            if(cx < 0 || cx > map.info.width || cy < 0 || cy > map.info.height || map.data[cy*map.info.width + cx] != 0){
+            if(cx < 0 || cx > (int)map.info.width || cy < 0 || cy > (int)map.info.height || map.data[cy*(int)map.info.width + cx] != 0){
                 return sqrt(pow((cx - cx_0),2) + pow((cy - cy_0),2)) * map.info.resolution;
             }
         }
@@ -307,7 +312,7 @@ Particle::Particle()
 }
 
 //Particleの初期化
-void Particle::p_init(float x,float y,float yaw,float sigma_x,float sigma_y,float sigma_yaw)
+void Particle::p_init(double x,double y,double yaw,double sigma_x,double sigma_y,double sigma_yaw)
 {
     //random()のみでParticleをばらまく
     /*
@@ -340,11 +345,11 @@ void Particle::p_init(float x,float y,float yaw,float sigma_x,float sigma_y,floa
 //Particleの動きを更新
 void Particle::p_motion_updata(geometry_msgs::PoseStamped current,geometry_msgs::PoseStamped previous)
 {
-    float dx;
-    float dy;
-    float dyaw;
-    float distance_sum = 0.0;
-    float angle_sum    = 0.0;
+    double dx;
+    double dy;
+    double dyaw;
+    double distance_sum = 0.0;
+    double angle_sum    = 0.0;
 
     //current - previous (移動量)
     dx   = current.pose.position.x - previous.pose.position.x;
@@ -357,7 +362,7 @@ void Particle::p_motion_updata(geometry_msgs::PoseStamped current,geometry_msgs:
     updata_flag = judge_updata(distance_sum,angle_sum);
 
     //particleを移動
-    for(int i = 0; i < particles.size(); i++){
+    for(int i = 0; i < N; i++){
         particles[i].p_move(dx,dy,dyaw);
     }
 }
@@ -368,35 +373,30 @@ void Particle::p_measurement_updata()
     double angle;
     double map_range;
     double range_diff = 0.0;
-    double p_weight_sum = 0.0;
 
     //更新したら尤度を計算する
-    if(updata_flag){
-        for(int i = 0; i < N; i++){
-            for(int j = 0; j < laser.ranges.size(); j += Range_Step){
-                angle = laser.angle_min + j*laser.angle_increment;
-                map_range = (double)(get_Range(particles[i].pose.pose.position.x,particles[i].pose.pose.position.y,get_Yaw(particles[i].pose.pose.orientation)+angle));
+    for(int i = 0; i < (int)laser.ranges.size(); i += Range_Step){
+        angle = laser.angle_min + i*laser.angle_increment;
+        map_range = get_Range(pose.pose.position.x,pose.pose.position.y,get_Yaw(pose.pose.orientation)+ angle);
 
-                rand_diff += pow((laser.ranges[j] - map_range),2);
-            }
-            particles[i].weight = exp(-rand_diff/(2*pow(p_sigma,2)));
-            p_weight_sum += particles[i].weight;
-        }
-
-        for(int i = 0; i < N; i++){
-            particles[i].weight /= p_weight_sum;
-        }
-
-        average_weight = p_weight_sum / (double)N;
+        range_diff += pow((laser.ranges[i] - map_range),2);
+        weight = exp(-range_diff/(2*pow(p_sigma,2)));
     }
 }
 
-//Particleを(x,y,yaw)へ移動
-void Particle::p_move(float x,float y,float yaw)
+//Particleを(dx,dy,dyaw)移動させる
+void Particle::p_move(double dx,double dy,double dyaw)
 {
-    pose.pose.position.x += x * cos(get_Yaw(pose.pose.position.orientation)) - y * sin(get_Yaw(pose.pose.position.orientation));
-    pose.pose.position.y += x * sin(get_Yaw(pose.pose.position.orientation)) + y * cos(get_Yaw(pose.pose.position.orientation));
-    quaternionTFToMsg(tf::createQuaternionFromYaw(get_yaw(pose.pose.orientation)),pose.pose.orientation);
+    double yaw = get_Yaw(pose.pose.orientation);
+    double distance = sqrt(dx*dx + dy*dy);
+
+    std::normal_distribution<> dist_dx(0,move_noise_x);
+    std::normal_distribution<> dist_dy(0,move_noise_y);
+    std::normal_distribution<> dist_dyaw(0,move_noise_yaw);
+
+    pose.pose.position.x += distance * cos(yaw) + dist_dx(engine);
+    pose.pose.position.y += distance * sin(yaw) + dist_dy(engine);
+    quaternionTFToMsg(tf::createQuaternionFromYaw(yaw + dyaw + dist_dyaw(engine)),pose.pose.orientation);
 }
 
 int main(int argc,char **argv)
@@ -414,6 +414,8 @@ int main(int argc,char **argv)
     ros::Publisher lmc_sub = nh.advertise<geometry_msgs::Pose2D>("/chibi20/pose",100);
     ros::Publisher gpp_sub = nh.advertise<geometry_msgs::Pose2D>("/poses",100);
 
+    //parameterから取得
+    /*
     private_nh.getParam("N",N);
     private_nh.getParam("init_x",init_x);
     private_nh.getParam("init_y",init_y);
@@ -424,6 +426,7 @@ int main(int argc,char **argv)
     private_nh.getParam("p_sigma",p_sigma);
     private_nh.getParam("MAX_Range",MAX_Range);
     private_nh.getParam("Range_Step",Range_Step);
+    */
 
     tf::TransformBroadcaster broadcaster;
     tf::TransformListener listener;
@@ -433,7 +436,7 @@ int main(int argc,char **argv)
     //位置の初期化
     current_pose.pose.position.x = 0.0;
     current_pose.pose.position.y = 0.0;
-    quaternionTFToMsg(tf::createQuaternionFromYaw(0.0),current.pose.orientation);
+    quaternionTFToMsg(tf::createQuaternionFromYaw(0.0),current_pose.pose.orientation);
     previous_pose  = current_pose;
 
     ros::Rate rate(10.0);
@@ -469,47 +472,52 @@ int main(int argc,char **argv)
                 for(int i = 0; i < N; i++){
                     Particle p;
 
-                    p.p_init(estimated_pose.pose.position.x,estimated_pose.pose.position.y,get_Yaw(estimated_pose.pose.position.yaw),x_sigma,y_sigma,yaw_sigma);
+                    p.p_init(estimated_pose.pose.position.x,estimated_pose.pose.position.y,get_Yaw(estimated_pose.pose.orientation),x_sigma,y_sigma,yaw_sigma);
                     set_particles.push_back(p);
                 }
                 particles = set_particles;
             }
 
             //Particleの動きを更新
-            particles.p_motion_updata(current_pose,previous_pose);
-
+            for(int i = 0; i < N; i++){
+                particles[i].p_motion_updata(current_pose,previous_pose);
+            }
 
             //尤度処理
-            particles.p_measurement_updata();
-
-            for(int i = 0; i < N; i++){
-                if(particles[i].weight > particles[max_index].weight){
-                    max_index = i;
-                }
-            }
-
-            if(average_weight = 0 || std::isnan(average_weight)){
-                average_weight = 1 / (double)N;
-                weight_slow = weight_fast = weight_average;
-            }
-
-            if(weight_slow == 0){
-                weight_slow = weight_average;
-            }
-            else{
-                weight_slow += alpha*(weight_average - weight_slow);
-            }
-
-            if(weight_fast == 0){
-                weight_fast = weight_average;
-            }
-            else{
-                weight_fast += alpha*(weight_average - weight_fast)
-            }
-
-            //Resampling
             if(updata_flag){
-                std::uniform_real_distribution<> dist(0.0,0.1)
+                for(int i = 0; i < N; i++){
+                    particles[i].p_measurement_updata();
+                    weight_sum += particles[i].weight;
+                }
+                for(int i = 0; i < N; i++){
+                    weight_average = weight_sum / (double)N;
+                    particles[i].weight /= weight_sum;
+                        if(particles[i].weight > particles[max_index].weight){
+                            max_index = i;
+                        }
+                }
+
+                if(weight_average ==  0 || std::isnan(weight_average)){
+                    weight_average = 1 / (double)N;
+                    weight_slow = weight_fast = weight_average;
+                }
+
+                if(weight_slow == 0){
+                    weight_slow = weight_average;
+                }
+                else{
+                    weight_slow += alpha_slow*(weight_average - weight_slow);
+                }
+
+                if(weight_fast == 0){
+                    weight_fast = weight_average;
+                }
+                else{
+                    weight_fast += alpha_fast*(weight_average - weight_fast);
+                }
+
+                //Resampling
+                std::uniform_real_distribution<> dist(0.0,0.1);
                 int index = (int)(dist(engine)*N);
                 double beta = 0.0;
                 double mv = particles[max_index].weight;
@@ -559,7 +567,7 @@ int main(int argc,char **argv)
 
                 tf::StampedTransform map_transform;
                 map_transform.setOrigin(tf::Vector3(estimated_pose.pose.position.x,estimated_pose.pose.position.y,0.0));
-                map_transform.setRotation(tf::createQuaternionFromYaw(get_Yaw(estimated_pose.pose.orientation)));
+                map_transform.setRotation(tf::Quaternion(0,0,get_Yaw(estimated_pose.pose.orientation),1));
                 tf::Stamped<tf::Pose> tf_stamped(map_transform.inverse(),laser.header.stamp,"base_link");
                 tf::Stamped<tf::Pose> odom_to_map;
                 listener.transformPose("odom",tf_stamped,odom_to_map);
