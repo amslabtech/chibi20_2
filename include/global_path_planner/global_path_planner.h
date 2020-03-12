@@ -47,22 +47,22 @@ private:
     //parameter
     static const int row=4000;
     static const int column=4000;
-    Coordinate goal_grid;
-    Coordinate searching_grid;
-    Coordinate landmark[4];
-    Coordinate tracing_grid;
+    const int move_cost[4]={1,1,1,1};//左上右下の順番
     int Hz;
     int wall_border;
     int wall_cost;
-    const int move_cost[4]={1,1,1,1};//左上右下の順番
-    int grid_map[row][column];
-    Costs open_list[row][column];
-    Costs close_list[row][column];
     bool map_received=false;
     bool reached_goal=false;
     bool reached_start=false;
     float proto_g;
     float proto_f;
+    int grid_map[row][column];
+    Coordinate goal_grid;
+    Coordinate searching_grid;
+    Coordinate landmark[4];
+    Coordinate tracing_grid;
+    Costs open_list[row][column];
+    Costs close_list[row][column];
 
 
     //member

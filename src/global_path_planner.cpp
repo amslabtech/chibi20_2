@@ -6,10 +6,11 @@ A_Star_Planner::A_Star_Planner() :private_n("~")
     private_n.param("Hz",Hz,{1});
     private_n.param("wall_border",wall_border,{50});
     private_n.param("wall_cost",wall_cost,{100000000});
-    // private_n.param("move_cost",move_cost,{1,1,1,1});
     private_n.param("map_received",map_received,{false});
     private_n.param("reached_goal",reached_goal,{false});
     private_n.param("reached_start",reached_start,{false});
+    private_n.param("proto_g",proto_g,{100000000});
+    private_n.param("proto_f",proto_f,{100000000});
 
     //subscriber
     sub_map=n.subscribe("chibi20_2/map",1,&A_Star_Planner::map_callback,this);
