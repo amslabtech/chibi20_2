@@ -3,10 +3,21 @@
 A_Star_Planner::A_Star_Planner() :private_n("~")
 {
     //parameter
+    private_n.param("Hz",Hz,{1});
+    private_n.param("wall_border",wall_border,{50});
+    private_n.param("wall_cost",wall_cost,{100000000});
+    // private_n.param("move_cost",move_cost,{1,1,1,1});
+    private_n.param("map_received",map_received,{false});
+    private_n.param("reached_goal",reached_goal,{false});
+    private_n.param("reached_start",reached_start,{false});
 
     //subscriber
+    sub_map=n.subscribe("chibi20_2/map",1,&A_Star_Planner::map_callback,this);
+    sub_pose=n.subscribe("chibi20_2/localizer",1,&A_Star_Planner::pose_callback,this);
 
     //publisher
+    pub_path=n.advertise<nav_msgs::Path>("/chibi20_2/global_path_planner",1);
+
 
 }
 
@@ -61,8 +72,8 @@ void A_Star_Planner::define_starting_grid()
     searching_grid.y=(int)current_pose.y;
     open_list[searching_grid.x][searching_grid.y].f=huristic(searching_grid.x,searching_grid.y);
     open_list[searching_grid.x][searching_grid.y].g=0.0;
-    // open_list[searching_grid.x][searching_grid.y].dealer_x=-1;
-    // open_list[searching_grid.x][searching_grid.y].dealer_y=-1;
+    open_list[searching_grid.x][searching_grid.y].dealer_x=searching_grid.x;
+    open_list[searching_grid.x][searching_grid.y].dealer_y=searching_grid.y;
 }
 
 void A_Star_Planner::define_goal_grid()
@@ -72,46 +83,195 @@ void A_Star_Planner::define_goal_grid()
     //ゴール設定方法を検討中
 }
 
+int A_Star_Planner::grid_patern(const int& x,const int& y)
+{
+    if(open_list[x][y].f<wall_cost)
+        return 1;//This grid is in the open_list
+    else
+    {
+        if(close_list[x][y].f<wall_cost)
+            return 2;//This grid is in the close_list
+        else
+            return 0;//This grid isn't in any lists
+    }
+}
+
+
 void A_Star_Planner::open_around()
 {
     if(searching_grid.x>0)
     {
-        open_list[searching_grid.x-1][searching_grid.y].g=open_list[searching_grid.x][searching_grid.y].g+move_cost[0];
-        open_list[searching_grid.x-1][searching_grid.y].f=open_list[searching_grid.x-1][searching_grid.y].g+huristic(searching_grid.x-1,searching_grid.y);
-        open_list[searching_grid.x-1][searching_grid.y].dealer_x=searching_grid.x;
-        open_list[searching_grid.x-1][searching_grid.y].dealer_y=searching_grid.y;
-        if(grid_map[searching_grid.x-1][searching_grid.y]>wall_border)
-            open_list[searching_grid.x-1][searching_grid.y].f+=wall_cost;
+        proto_g=open_list[searching_grid.x][searching_grid.y].g+move_cost[0];
+        proto_f=proto_g+huristic(searching_grid.x-1,searching_grid.y);
+        switch(grid_patern(searching_grid.x-1,searching_grid.y))
+        {
+         case(0):
+             open_list[searching_grid.x-1][searching_grid.y].g=proto_g;
+             open_list[searching_grid.x-1][searching_grid.y].f=proto_f;
+             open_list[searching_grid.x-1][searching_grid.y].dealer_x=searching_grid.x;
+             open_list[searching_grid.x-1][searching_grid.y].dealer_y=searching_grid.y;
+             if(grid_map[searching_grid.x-1][searching_grid.y]>wall_border)
+                 open_list[searching_grid.x-1][searching_grid.y].f+=wall_cost;
+             break;
+         case(1):
+             if(proto_f<open_list[searching_grid.x-1][searching_grid.y].f)
+             {
+                 open_list[searching_grid.x-1][searching_grid.y].g=proto_g;
+                 open_list[searching_grid.x-1][searching_grid.y].g=proto_f;
+                 open_list[searching_grid.x-1][searching_grid.y].dealer_x=searching_grid.x;
+                 open_list[searching_grid.x-1][searching_grid.y].dealer_y=searching_grid.y;
+                 if(grid_map[searching_grid.x-1][searching_grid.y]>wall_border)
+                     open_list[searching_grid.x-1][searching_grid.y].f+=wall_cost;
+             }
+             break;
+         case(2):
+             if(proto_f<close_list[searching_grid.x-1][searching_grid.y].f)
+             {
+                 open_list[searching_grid.x-1][searching_grid.y].g=proto_g;
+                 open_list[searching_grid.x-1][searching_grid.y].f=proto_f;
+                 open_list[searching_grid.x-1][searching_grid.y].dealer_x=searching_grid.x;
+                 open_list[searching_grid.x-1][searching_grid.y].dealer_y=searching_grid.y;
+                 if(grid_map[searching_grid.x-1][searching_grid.y]>wall_border)
+                     open_list[searching_grid.x-1][searching_grid.y].f+=wall_cost;
+                 close_list[searching_grid.x-1][searching_grid.y].g=wall_cost;
+                 close_list[searching_grid.x-1][searching_grid.y].f=wall_cost;
+                 close_list[searching_grid.x-1][searching_grid.y].dealer_x=-1;
+                 close_list[searching_grid.x-1][searching_grid.y].dealer_y=-1;
+             }
+             break;
+         default: break;
+        }
     }
 
     if(searching_grid.y<column-1)
     {
-        open_list[searching_grid.x][searching_grid.y+1].g=open_list[searching_grid.x][searching_grid.y].g+move_cost[1];
-        open_list[searching_grid.x][searching_grid.y+1].f=open_list[searching_grid.x][searching_grid.y+1].g+huristic(searching_grid.x,searching_grid.y+1);
-        open_list[searching_grid.x][searching_grid.y+1].dealer_x=searching_grid.x;
-        open_list[searching_grid.x][searching_grid.y+1].dealer_y=searching_grid.y;
-        if(grid_map[searching_grid.x][searching_grid.y+1]>wall_border)
-            open_list[searching_grid.x][searching_grid.y+1].f+=wall_cost;
+        proto_g=open_list[searching_grid.x][searching_grid.y].g+move_cost[1];
+        proto_f=proto_g+huristic(searching_grid.x,searching_grid.y+1);
+        switch(grid_patern(searching_grid.x,searching_grid.y+1))
+        {
+         case(0):
+             open_list[searching_grid.x][searching_grid.y+1].g=proto_g;
+             open_list[searching_grid.x][searching_grid.y+1].f=proto_f;
+             open_list[searching_grid.x][searching_grid.y+1].dealer_x=searching_grid.x;
+             open_list[searching_grid.x][searching_grid.y+1].dealer_y=searching_grid.y;
+             if(grid_map[searching_grid.x][searching_grid.y+1]>wall_border)
+                 open_list[searching_grid.x][searching_grid.y+1].f+=wall_cost;
+             break;
+         case(1):
+             if(proto_f<open_list[searching_grid.x][searching_grid.y+1].f)
+             {
+                 open_list[searching_grid.x][searching_grid.y+1].g=proto_g;
+                 open_list[searching_grid.x][searching_grid.y+1].g=proto_f;
+                 open_list[searching_grid.x][searching_grid.y+1].dealer_x=searching_grid.x;
+                 open_list[searching_grid.x][searching_grid.y+1].dealer_y=searching_grid.y;
+                 if(grid_map[searching_grid.x][searching_grid.y+1]>wall_border)
+                     open_list[searching_grid.x][searching_grid.y+1].f+=wall_cost;
+             }
+             break;
+         case(2):
+             if(proto_f<close_list[searching_grid.x][searching_grid.y+1].f)
+             {
+                 open_list[searching_grid.x][searching_grid.y+1].g=proto_g;
+                 open_list[searching_grid.x][searching_grid.y+1].f=proto_f;
+                 open_list[searching_grid.x][searching_grid.y+1].dealer_x=searching_grid.x;
+                 open_list[searching_grid.x][searching_grid.y+1].dealer_y=searching_grid.y;
+                 if(grid_map[searching_grid.x][searching_grid.y+1]>wall_border)
+                     open_list[searching_grid.x][searching_grid.y+1].f+=wall_cost;
+                 close_list[searching_grid.x][searching_grid.y+1].g=wall_cost;
+                 close_list[searching_grid.x][searching_grid.y+1].f=wall_cost;
+                 close_list[searching_grid.x][searching_grid.y+1].dealer_x=-1;
+                 close_list[searching_grid.x][searching_grid.y+1].dealer_y=-1;
+             }
+             break;
+         default: break;
+        }
     }
-
-    if(searching_grid.x<row-1)
+    if(searching_grid.x<column-1)
     {
-        open_list[searching_grid.x+1][searching_grid.y].g=open_list[searching_grid.x][searching_grid.y].g+move_cost[2];
-        open_list[searching_grid.x+1][searching_grid.y].f=open_list[searching_grid.x+1][searching_grid.y].g+huristic(searching_grid.x+1,searching_grid.y);
-        open_list[searching_grid.x+1][searching_grid.y].dealer_x=searching_grid.x;
-        open_list[searching_grid.x+1][searching_grid.y].dealer_y=searching_grid.y;
-        if(grid_map[searching_grid.x+1][searching_grid.y]>wall_border)
-            open_list[searching_grid.x+1][searching_grid.y].f+=wall_cost;
+        proto_g=open_list[searching_grid.x][searching_grid.y].g+move_cost[2];
+        proto_f=proto_g+huristic(searching_grid.x+1,searching_grid.y);
+        switch(grid_patern(searching_grid.x+1,searching_grid.y))
+        {
+         case(0):
+             open_list[searching_grid.x+1][searching_grid.y].g=proto_g;
+             open_list[searching_grid.x+1][searching_grid.y].f=proto_f;
+             open_list[searching_grid.x+1][searching_grid.y].dealer_x=searching_grid.x;
+             open_list[searching_grid.x+1][searching_grid.y].dealer_y=searching_grid.y;
+             if(grid_map[searching_grid.x+1][searching_grid.y]>wall_border)
+                 open_list[searching_grid.x+1][searching_grid.y].f+=wall_cost;
+             break;
+         case(1):
+             if(proto_f<open_list[searching_grid.x+1][searching_grid.y].f)
+             {
+                 open_list[searching_grid.x+1][searching_grid.y].g=proto_g;
+                 open_list[searching_grid.x+1][searching_grid.y].g=proto_f;
+                 open_list[searching_grid.x+1][searching_grid.y].dealer_x=searching_grid.x;
+                 open_list[searching_grid.x+1][searching_grid.y].dealer_y=searching_grid.y;
+                 if(grid_map[searching_grid.x+1][searching_grid.y]>wall_border)
+                     open_list[searching_grid.x+1][searching_grid.y].f+=wall_cost;
+             }
+             break;
+         case(2):
+             if(proto_f<close_list[searching_grid.x+1][searching_grid.y].f)
+             {
+                 open_list[searching_grid.x+1][searching_grid.y].g=proto_g;
+                 open_list[searching_grid.x+1][searching_grid.y].f=proto_f;
+                 open_list[searching_grid.x+1][searching_grid.y].dealer_x=searching_grid.x;
+                 open_list[searching_grid.x+1][searching_grid.y].dealer_y=searching_grid.y;
+                 if(grid_map[searching_grid.x+1][searching_grid.y]>wall_border)
+                     open_list[searching_grid.x+1][searching_grid.y].f+=wall_cost;
+                 close_list[searching_grid.x+1][searching_grid.y].g=wall_cost;
+                 close_list[searching_grid.x+1][searching_grid.y].f=wall_cost;
+                 close_list[searching_grid.x+1][searching_grid.y].dealer_x=-1;
+                 close_list[searching_grid.x+1][searching_grid.y].dealer_y=-1;
+             }
+             break;
+         default: break;
+        }
     }
 
     if(searching_grid.y>0)
     {
-        open_list[searching_grid.x][searching_grid.y-1].g=open_list[searching_grid.x][searching_grid.y].g+move_cost[3];
-        open_list[searching_grid.x][searching_grid.y-1].f=open_list[searching_grid.x][searching_grid.y-1].g+huristic(searching_grid.x,searching_grid.y-1);
-        open_list[searching_grid.x][searching_grid.y-1].dealer_x=searching_grid.x;
-        open_list[searching_grid.x][searching_grid.y-1].dealer_y=searching_grid.y;
-        if(grid_map[searching_grid.x][searching_grid.y-1]>wall_border)
-            open_list[searching_grid.x][searching_grid.y-1].f+=wall_cost;
+        proto_g=open_list[searching_grid.x][searching_grid.y].g+move_cost[3];
+        proto_f=proto_g+huristic(searching_grid.x,searching_grid.y+1);
+        switch(grid_patern(searching_grid.x,searching_grid.y+1))
+        {
+         case(0):
+             open_list[searching_grid.x][searching_grid.y-1].g=proto_g;
+             open_list[searching_grid.x][searching_grid.y-1].f=proto_f;
+             open_list[searching_grid.x][searching_grid.y-1].dealer_x=searching_grid.x;
+             open_list[searching_grid.x][searching_grid.y-1].dealer_y=searching_grid.y;
+             if(grid_map[searching_grid.x][searching_grid.y-1]>wall_border)
+                 open_list[searching_grid.x][searching_grid.y-1].f+=wall_cost;
+             break;
+         case(1):
+             if(proto_f<open_list[searching_grid.x][searching_grid.y-1].f)
+             {
+                 open_list[searching_grid.x][searching_grid.y-1].g=proto_g;
+                 open_list[searching_grid.x][searching_grid.y-1].g=proto_f;
+                 open_list[searching_grid.x][searching_grid.y-1].dealer_x=searching_grid.x;
+                 open_list[searching_grid.x][searching_grid.y-1].dealer_y=searching_grid.y;
+                 if(grid_map[searching_grid.x][searching_grid.y-1]>wall_border)
+                     open_list[searching_grid.x][searching_grid.y-1].f+=wall_cost;
+             }
+             break;
+         case(2):
+             if(proto_f<close_list[searching_grid.x][searching_grid.y-1].f)
+             {
+                 open_list[searching_grid.x][searching_grid.y-1].g=proto_g;
+                 open_list[searching_grid.x][searching_grid.y-1].f=proto_f;
+                 open_list[searching_grid.x][searching_grid.y-1].dealer_x=searching_grid.x;
+                 open_list[searching_grid.x][searching_grid.y-1].dealer_y=searching_grid.y;
+                 if(grid_map[searching_grid.x][searching_grid.y-1]>wall_border)
+                     open_list[searching_grid.x][searching_grid.y-1].f+=wall_cost;
+                 close_list[searching_grid.x][searching_grid.y-1].g=wall_cost;
+                 close_list[searching_grid.x][searching_grid.y-1].f=wall_cost;
+                 close_list[searching_grid.x][searching_grid.y-1].dealer_x=-1;
+                 close_list[searching_grid.x][searching_grid.y-1].dealer_y=-1;
+             }
+             break;
+         default: break;
+        }
     }
 }
 
@@ -155,7 +315,7 @@ void A_Star_Planner::update_searching_grid()
     }
     if(next_grid.dealer_x==-1||next_grid.dealer_y==-1)
     {
-        std::cout<<"cannot make gloabal path"<<std::endl;
+        std::cout<<"cannot make global path"<<std::endl;
         std::exit(0);
     }
     else
@@ -172,8 +332,18 @@ void A_Star_Planner::trace_dealer()
     global_path.poses[0].pose.position.x=goal_grid.y;
     global_path.poses[1].pose.position.x=open_list[goal_grid.x][goal_grid.y].dealer_x;
     global_path.poses[1].pose.position.y=open_list[goal_grid.x][goal_grid.y].dealer_y;
-   // while(!reached_start)
-
+    tracing_grid.x=goal_grid.x;
+    tracing_grid.y=goal_grid.y;
+    int i=2;
+    while(!reached_start)
+   {
+       global_path.poses[i].pose.position.x=close_list[tracing_grid.x][tracing_grid.y].dealer_x;
+       global_path.poses[i].pose.position.y=close_list[tracing_grid.x][tracing_grid.y].dealer_y;
+       tracing_grid.x=close_list[tracing_grid.x][tracing_grid.y].dealer_x;
+       tracing_grid.y=close_list[tracing_grid.x][tracing_grid.y].dealer_y;
+        if(tracing_grid.x==close_list[tracing_grid.x][tracing_grid.y].dealer_x)
+            reached_start=true;
+   }
 }
 
 void A_Star_Planner::path_creator()
@@ -188,12 +358,7 @@ void A_Star_Planner::path_creator()
         update_searching_grid();
         check_goal();
     }
-    while(!reached_start)
-    {
-        trace_dealer();
-        // update_path();
-        // check_start();
-    }
+    trace_dealer();
 
 
 
