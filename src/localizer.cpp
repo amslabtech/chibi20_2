@@ -3,12 +3,13 @@
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/PoseArray.h"
 #include "geometry_msgs/Pose.h"
-#include "geometry_msgs/Pose2D"
+#include "geometry_msgs/Pose2D.h"
 #include "sensor_msgs/LaserScan.h"
 #include "tf/transform_broadcaster.h"
 #include "tf/transform_listener.h"
 
 #include <math.h>
+#include <random>
 
 class Particle
 {
@@ -38,6 +39,7 @@ geometry_msgs::PoseArray poses;
 std::vector<Particle> particles
 
 int N;                      //Particleの数
+int max_index;
 float init_x;               //初期位置x
 float init_y;               //初期位置y
 float init_yaw;             //初期位置yaw
@@ -46,10 +48,13 @@ float init_y_sigma;
 float init_yaw_sigma;
 float MAX_Range;
 int Range_Step;             //尤度step
-float x_sigma;
-float y_sigma;
-float yaw_sigma;
-float p_sigma;
+float x_sigma = 0.5;        //xの分散
+float y_sigma = 0.5;        //yの分散
+float yaw_sigma = 0.5;      //yawの分散
+float x_TH;                 //xのしきい値
+float y_TH;                 //yのしきい値
+float yaw_TH;               //yawのしきい値
+float p_sigma;              //particleの
 float move_noise_x;         //noise
 float move_noise_y;         //noise
 float move_noise_yaw;       //noise
@@ -58,6 +63,10 @@ float judge_distance_value;
 float judge_angle_value;
 
 double average_weight;      //尤度の平均
+double weight_slow = 0.0;
+double weight_fast = 0.0;
+double alpha_slow;
+double alpha_fast;
 bool get_map = false;       //mapを取得したかどうかの判定
 bool updata_flag = false;   //更新するかどうかの判定
 
@@ -117,7 +126,7 @@ void odometry_callback(const nav_msgs::Odomenry::ConstPtr& odo)
 }
 
 /*
-//乱数生成
+// --- 乱数生成 (多分使わない)---
 float random()
 {
     static int flag;
@@ -195,7 +204,7 @@ float random_normal(float mu,float sigma)
 }
 */
 
-//データを取得する範囲の更新
+//Rangeの更新
 float get_Range(float x,float y,float yaw)
 {
     int cx_0;
@@ -378,7 +387,7 @@ void Particle::p_measurement_updata()
             particles[i].weight /= p_weight_sum;
         }
 
-        average_weight /= p_weight_sum;
+        average_weight = p_weight_sum / (double)N;
     }
 }
 
@@ -451,39 +460,123 @@ int main(int argc,char **argv)
             quaternionTFToMsg(transform.getRotation(),current_pose.pose.orientation);
 
             //Particleをばらまく
-            /*
-                --- insert code ---
-            */
+            if(x_sigma < x_TH || y_sigma < y_TH || yaw_sigma < yaw_TH){
+                x_sigma   = 0.3;
+                y_sigma   = 0.3;
+                yaw_sigma = 0.3;
+
+                std::vector<Particle> set_particles;
+                for(int i = 0; i < N; i++){
+                    Particle p;
+
+                    p.p_init(estimated_pose.pose.position.x,estimated_pose.pose.position.y,get_Yaw(estimated_pose.pose.position.yaw),x_sigma,y_sigma,yaw_sigma);
+                    set_particles.push_back(p);
+                }
+                particles = set_particles;
+            }
 
             //Particleの動きを更新
-            /*
-                --- insert code ---
-             */
+            particles.p_motion_updata(current_pose,previous_pose);
 
-            //尤度をResamplingした結果から位置推定(estimated_pose)
-            /*
-                --- insert code ---
-            */
 
-            //estimated_pose(Pose) >> Pose2D
-            /*
-                --- insert code ---
-             */
+            //尤度処理
+            particles.p_measurement_updata();
 
-            //Pose2DでPublish
-            /*
-                --- insert code ---
-                pose2d.x     =;
-                pose2d.y     =;
-                pose2d.theta =;
+            for(int i = 0; i < N; i++){
+                if(particles[i].weight > particles[max_index].weight){
+                    max_index = i;
+                }
+            }
 
-                lmc_sub.publish(pose2d);
-                gpp_sub.publish(pose2d);
-             */
+            if(average_weight = 0 || std::isnan(average_weight)){
+                average_weight = 1 / (double)N;
+                weight_slow = weight_fast = weight_average;
+            }
 
+            if(weight_slow == 0){
+                weight_slow = weight_average;
+            }
+            else{
+                weight_slow += alpha*(weight_average - weight_slow);
+            }
+
+            if(weight_fast == 0){
+                weight_fast = weight_average;
+            }
+            else{
+                weight_fast += alpha*(weight_average - weight_fast)
+            }
+
+            //Resampling
+            if(updata_flag){
+                std::uniform_real_distribution<> dist(0.0,0.1)
+                int index = (int)(dist(engine)*N);
+                double beta = 0.0;
+                double mv = particles[max_index].weight;
+                std::vector<Particle> new_particles;
+
+                double w;
+                if((1-weight_fast/weight_slow) > 0){
+                    w = 1 - weight_fast/weight_slow;
+                }
+                else{
+                    w = 0.0;
+                }
+                for(int i = 0; i < N; i++){
+                    if(w < dist(engine)){
+                        beta += dist(engine) * 2.0 * mv;
+                        while(beta > particles[index].weight){
+                            beta -= particles[index].weight;
+                            index -= (index+1)%N;
+                        }
+                        new_particles.push_back(particles[index]);
+                    }
+                    else{
+                        Particle p;
+                        p.p_init(estimated_pose.pose.position.x,estimated_pose.pose.position.y,get_Yaw(estimated_pose.pose.orientation),init_x_sigma,init_y_sigma,init_yaw_sigma);
+                        new_particles.push_back(p);
+                    }
+                }
+
+                particles = new_particles;
+            }
+
+            try{
+                updata_flag = false;
+
+                //尤度が一番大きいparticleを算出
+                estimated_pose.header.frame_id = "map";
+                estimated_pose.pose = particles[max_index].pose.pose;
+
+                //estimated_poseをestimated_pose2dへ
+                geometry_msgs::Pose2D estimated_pose2d;
+
+                estimated_pose2d.x     = estimated_pose.pose.position.x;
+                estimated_pose2d.y     = estimated_pose.pose.position.y;
+                estimated_pose2d.theta = get_Yaw(estimated_pose.pose.orientation);
+                lmc_sub.publish(estimated_pose2d);
+                gpp_sub.publish(estimated_pose2d);
+
+                tf::StampedTransform map_transform;
+                map_transform.setOrigin(tf::Vector3(estimated_pose.pose.position.x,estimated_pose.pose.position.y,0.0));
+                map_transform.setRotation(tf::createQuaternionFromYaw(get_Yaw(estimated_pose.pose.orientation)));
+                tf::Stamped<tf::Pose> tf_stamped(map_transform.inverse(),laser.header.stamp,"base_link");
+                tf::Stamped<tf::Pose> odom_to_map;
+                listener.transformPose("odom",tf_stamped,odom_to_map);
+                tf::Transform latest_tf = tf::Transform(tf::Quaternion(odom_to_map.getRotation()),tf::Point(odom_to_map.getOrigin()));
+                temp_tf_stamped = tf::StampedTransform(latest_tf.inverse(),laser.header.stamp,"map","odom");
+                broadcaster.sendTransform(temp_tf_stamped);
+
+            }
+            catch(tf::TransformException ex){
+                ROS_ERROR("ERROR!");
+                ROS_ERROR("%s", ex.what());
+            }
+        }
+        ros::spinOnce();
+        rate.sleep();
+
+        previous_pose = current_pose;
     }
-    ros::spinOnce();
-    rate.sleep();
-
     return 0;
 }
