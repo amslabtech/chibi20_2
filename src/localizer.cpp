@@ -264,6 +264,38 @@ bool judge_update(double distance_value,double angle_value)
     angle_value = 0.0;
 }
 
+void create_new_cov(double* cov_1,double* cov_2,double* cov_3)
+{
+    double ave_1 = 0.0;
+    double ave_2 = 0.0;
+    double ave_3=  0.0;
+
+    for(int i = 0; i < N; i++){
+        ave_1 += particles[i].pose.pose.position.x;
+        ave_2 += particles[i].pose.pose.position.y;
+        ave_3 += get_Yaw(particles[i].pose.pose.orientation);
+    }
+
+    ave_1 /= N;
+    ave_2 /= N;
+    ave_3 /= N;
+
+    double new_cov_1 = 0.0;
+    double new_cov_2 = 0.0;
+    double new_cov_3 = 0.0;
+
+    //新しい偏差を計算
+    for(int i = 0; i < N; i++){
+        new_cov_1 += pow((particles[i].pose.pose.position.x - ave_1),2);
+        new_cov_2 += pow((particles[i].pose.pose.position.y - ave_2),2);
+        new_cov_3 += pow((get_Yaw(particles[i].pose.pose.orientation) - ave_3),2);
+    }
+
+    *cov_1 = sqrt(new_cov_1/N);
+    *cov_2 = sqrt(new_cov_2/N);
+    *cov_3 = sqrt(new_cov_3/N);
+}
+
 Particle::Particle()
 {
     pose.header.frame_id = "map";
@@ -360,6 +392,8 @@ int main(int argc,char **argv)
     ros::init(argc,argv,"localizer");
     ros::NodeHandle nh;
     ros::NodeHandle private_nh("~");
+
+    ROS_INFO("Start Localizer\n");
 
     //Subscriber
     ros::Subscriber map_sub = nh.subscribe("/map",100,map_callback);
@@ -508,6 +542,8 @@ int main(int argc,char **argv)
                 }
 
                 particles = new_particles;
+                //新たな偏差を取得
+                create_new_cov(&x_cov,&y_cov,&yaw_cov);
             }
 
             try{

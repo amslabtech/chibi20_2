@@ -13,11 +13,11 @@ A_Star_Planner::A_Star_Planner() :private_n("~")
     private_n.param("proto_f",proto_f,{100000000});
 
     //subscriber
-    sub_map=n.subscribe("chibi20_2/map",1,&A_Star_Planner::map_callback,this);
+    sub_map=n.subscribe("map",1,&A_Star_Planner::map_callback,this);
     sub_pose=n.subscribe("chibi20_2/localizer",1,&A_Star_Planner::pose_callback,this);
 
     //publisher
-    pub_path=n.advertise<nav_msgs::Path>("/chibi20_2/global_path_planner",1);
+    pub_path=n.advertise<nav_msgs::Path>("global_path",1);
 
 
 }
@@ -34,6 +34,10 @@ void A_Star_Planner::map_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
             grid_map[i][j]= _msg.data[i*row+j];
         }
     }
+    //###use in test only
+    // searching_grid.x=_msg.info.width;
+    // searching_grid.y=_msg.info.height;
+    //###
 
     //global_path.header.frame_id="map";
 
@@ -79,6 +83,10 @@ void A_Star_Planner::define_starting_grid()
 
 void A_Star_Planner::define_goal_grid()
 {
+    //###use in test only
+    // goal_grid.x=searching_grid.x+3;
+    // goal_grid.y=searching_grid.y+3;
+    //###
     //１周するには何回かゴールを更新して１つのパスを作る必要がある。
     //全体的なスタートとゴールが一緒なためそのままやるとパスを引けない
     //ゴール設定方法を検討中
@@ -368,13 +376,17 @@ void A_Star_Planner::path_creator()
 void A_Star_Planner::process()
 {
     ros::Rate loop_rate(Hz);
-    if(map_received)
+    while(1)
     {
-        path_creator();
-        pub_path.publish(global_path);
-        map_received=false;
+        if(map_received)
+        {
+             path_creator();
+             pub_path.publish(global_path);
+                map_received=false;
+        }
+           std::cout<<"test now"<<std::endl;
+           loop_rate.sleep();
     }
-    loop_rate.sleep();
 }
 
 int main (int argc, char **argv)
