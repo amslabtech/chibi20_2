@@ -29,8 +29,10 @@ public:
 private:
     //method
     void map_callback(const nav_msgs::OccupancyGrid::ConstPtr&);
+    void map_metadata_callback(const nav_msgs::MapMetaData::ConstPtr&);
     void pose_callback(const geometry_msgs::Pose2D::ConstPtr& );
     void path_creator();
+    void map_updater();
     void clean_lists();
     float huristic(const int&,const int&);
     void define_starting_grid();
@@ -45,8 +47,8 @@ private:
 
 
     //parameter
-    static const int row=4000;
-    static const int column=4000;
+    int row;
+    int column;
     const int move_cost[4]={1,1,1,1};//左上右下の順番
     int Hz;
     int wall_border;
@@ -56,13 +58,13 @@ private:
     bool reached_start=false;
     float proto_g;
     float proto_f;
-    int grid_map[row][column];
+    std::vector<std::vector<int>> grid_map;//int grid_map[row][column];
     Coordinate goal_grid;
     Coordinate searching_grid;
     Coordinate landmark[4];
     Coordinate tracing_grid;
-    Costs open_list[row][column];
-    Costs close_list[row][column];
+    std::vector<std::vector<Costs>>open_list;//Costs open_list[row][column];
+    std::vector<std::vector<Costs>>close_list;//Costs close_list[row][column];
 
 
     //member
@@ -72,8 +74,10 @@ private:
     ros::NodeHandle private_n;
     ros::Publisher pub_path;
     ros::Subscriber sub_map;
+    ros::Subscriber sub_map_metadata;
     ros::Subscriber sub_pose;
     nav_msgs::OccupancyGrid prior_map;//元マップデータ格納
+    nav_msgs::MapMetaData map_metadata;
     nav_msgs::OccupancyGrid updated_map;//経路封鎖時にLocalMapCreaterから受取
     geometry_msgs::Pose2D current_pose;//経路封鎖時のスタート位置用
     nav_msgs::Path global_path;//LocalPathPlannerに出力
