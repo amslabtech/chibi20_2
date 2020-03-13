@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+    <node pkg="chibi20_2" type="global_path_planner" name="global_path">
+        <param
