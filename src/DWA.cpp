@@ -2,7 +2,7 @@
 #include "std_msgs/Bool.h"
 #include "roomba_500driver_meiji/RoombaCtrl.h"
 #include "sensor_msgs/LaserScan.h"
-#include "nav_msgs/Odometory.h"
+#include "nav_msgs/Odometry.h"
 #include "math.h"
 #include <tf/tf.h>
 #include "geometry_msgs/PointStamped.h"
@@ -16,15 +16,15 @@ double max_dyawrate;
 double v_reso;
 double yawrate_reso;
 double dt;
-double  predict_time;
+double predict_time;
 double to_goal_cost_gain;
 double dist_gain;
 double speed_cost_gain;
 double obstacle_cost_gain;
 double robot_radius;
-//double roomba_v_gain;
-//double roomba_omega_gain;
-bool white_line_director `= false;
+double roomba_v_gain;
+double roomba_omega_gain;
+bool white_line_detector = false;
 bool dist = false;
 
 const int N = 720; //(_msg.angle_max - msg.angle_max) / _msg.angle_increment
@@ -39,10 +39,10 @@ struct State{
     double omega;
 };
 
-//struct Speed{
-//    double v;
-//    double omega;
-//};
+struct Speed{
+   double v;
+   double omega;
+};
 
 struct Goal{
     double x;
@@ -63,17 +63,17 @@ struct Dynamic_Window{
 
 LaserData Ldata[N];
 Goal goal = {0, 0};
-geometry_msgs::poseWithCovarianceStamped est_pose_msg;
+geometry_msgs::PoseWithCovarianceStamped est_pose_msg;
 
-void estpose_callback(const geometry_msgs::poseWithCovarianceStamped::ConstPtr& msg) //method
+void estpose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg) //method
 {
     est_pose_msg = *msg;
 }
 void targetpose_callback(const geometry_msgs::PointStamped::ConstPtr& msg) //method
 {
     geometry_msgs::PointStamped _msg = *msg;
-    goal.x = msg.point.x;
-    goal.y = msg.point.y;
+    goal.x = _msg.point.x;
+    goal.y = _msg.point.y;
 }
 void whiteline_callback(const std_msgs::Bool msg) //method
 {
@@ -82,7 +82,7 @@ void whiteline_callback(const std_msgs::Bool msg) //method
 
 void motion(State& roomba, Speed u) //method
 {
-    roomba.yaw += u.omega : dt;
+    roomba.yaw += u.omega * dt;
     roomba.x += u.v * std::cos(roomba.yaw) * dt;
     roomba.y += u.v * std::sin(roomba.yaw) * dt;
     roomba.v = u.v;
@@ -96,10 +96,10 @@ void calc_dynamic_window(Dynamic_Window& dw, State& roomba) //method
                                     -max_yawrate,
                                     max_yawrate};
 
-    Dynamic_Window Vd = {roomba.v -(max_accel * dt)},
+    Dynamic_Window Vd = {roomba.v -(max_accel * dt),
                                     roomba.v + (max_accel * dt),
                                     roomba.omega - (max_dyawrate * dt),
-                                    roomba_omega + (max_dyawrate * dt);
+                                    roomba.omega + (max_dyawrate * dt)};
 
     dw.min_v = std::max(Vs.min_v, Vd.min_v);
     dw.max_v = std::min(Vs.max_v, Vd.max_v);
@@ -110,21 +110,21 @@ void calc_dynamic_window(Dynamic_Window& dw, State& roomba) //method
 return;
 }
 
-void calc_trajectory(std::vector<State>& traj, State roomba, double i double j)  //method
+void calc_trajectory(std::vector<State>& traj, State roomba, double i, double j)  //method
 {
-    State roomba_traj = {0.0, 0.0, 0.0, 0.0, 0,0};
-    Speed u = {1,j};
+    State roomba_traj = {0.0, 0.0, 0.0, 0.0, 0.0};
+    Speed u = {i,j};
     traj.clear();
     double roomba_traj_u = 0.0;
     double roomba_traj_v = 0.0;
 
 
-    for(double t = 0.0; t<= pedict_time; t +=dt){
-        roomba_traj.yaw += u.omega * dt;:
+    for(double t = 0.0; t<= predict_time; t +=dt){
+        roomba_traj.yaw += u.omega * dt;
         roomba_traj_u += u.v * std::cos(roomba_traj.yaw) * dt;
         roomba_traj_v += u.v * std::sin(roomba_traj.yaw) * dt;
-        roomba_traj_x = roomba.x + (roomba_trak_u * std::cos(roomba.yaw)) - (roomba_traj_v * std::sin(roomba.yaw));
-        roomba_traj_y = roomba.y + (roomba_trak_u * std::sin(roomba.yaw)) - (roomba_traj_v * std::cos(roomba.yaw));
+        roomba_traj.x = roomba.x + (roomba_traj_u * std::cos(roomba.yaw)) - (roomba_traj_v * std::sin(roomba.yaw));
+        roomba_traj.y = roomba.y + (roomba_traj_u * std::sin(roomba.yaw)) - (roomba_traj_v * std::cos(roomba.yaw));
         roomba_traj.v = u.v;
         roomba_traj.omega = u.omega;
         traj.push_back(roomba_traj);
@@ -136,7 +136,7 @@ void calc_trajectory(std::vector<State>& traj, State roomba, double i double j) 
 
 double calc_to_goal_cost(std::vector<State>& traj, Goal goal, State roomba) //method
 {
-
+    // calculation for inner product
 
 
 
@@ -183,9 +183,9 @@ double calc_speed_cost(std::vector<State> traj)
 double calc_obstacle_cost(State roomba, std::vector<State> traj)
 {
     int skip_k = 2;
-    int skip_i = 10;
+    int skip_l = 10;
     double min_r = std::numeric_limits<double>::infinity();
-    double infinity = std::numeric_limits<double>::infiity();
+    double infinity = std::numeric_limits<double>::infinity();
     double x_traj;
     double y_traj;
     double u_obstacle = 0.0;
@@ -197,8 +197,8 @@ double calc_obstacle_cost(State roomba, std::vector<State> traj)
     double range_obstacle;
     double x_obstacle;
     double xx_obstacle;
-    double y_obsatcle;
-    double yy_obsatcle;
+    double y_obstacle;
+    double yy_obstacle;
 
     for(int k = 0; k < traj.size(); k += skip_k) {
         x_traj = traj[k].x;
@@ -209,21 +209,21 @@ double calc_obstacle_cost(State roomba, std::vector<State> traj)
             r = 0.0;
 
             angle_obstacle = Ldata[l].angle;
-            range_obsatcle = Ldata[l].range;
+            range_obstacle = Ldata[l].range;
 
 
-            if(range_obsatcle < robot_radius) {
+            if(range_obstacle < robot_radius) {
                 continue;
             }
 
-            if(range_obsatcle > 30.0) {
-                range_obsatcle = 30.0;
+            if(range_obstacle > 30.0) {
+                range_obstacle = 30.0;
             }
 
-            u_obsatcle = range_obsatcle * std::cos(angle_obsatcle);
-            v_obsatcle = range_obsatcle * std::sin(angle_obsatcle);
-            xx_obstacle = (u_obsatcle * std::cos(roomba.yaw)) - (v_obstacle * std::sin(roomba.yaw));
-            yy_obstacle = (u_obsatcle * std::sin(roomba.yaw)) - (v_obstacle * std::cos(roomba.yaw));
+            u_obstacle = range_obstacle * std::cos(angle_obstacle);
+            v_obstacle = range_obstacle * std::sin(angle_obstacle);
+            xx_obstacle = (u_obstacle * std::cos(roomba.yaw)) - (v_obstacle * std::sin(roomba.yaw));
+            yy_obstacle = (u_obstacle * std::sin(roomba.yaw)) - (v_obstacle * std::cos(roomba.yaw));
             x_obstacle = x_roomba + xx_obstacle;
             y_obstacle = y_roomba + yy_obstacle;
             r = std::sqrt(pow(x_obstacle - x_traj, 2.0) + pow(y_obstacle - y_traj, 2.0));
@@ -233,7 +233,7 @@ double calc_obstacle_cost(State roomba, std::vector<State> traj)
 
 
             if(r <= robot_radius) {
-                return infinty;
+                return infinity;
             }
 
             if(min_r >= r) {
@@ -245,7 +245,7 @@ double calc_obstacle_cost(State roomba, std::vector<State> traj)
     return 1 / min_r;
 }
 
-void calc_final_input(State roomba, Speed& u, Dynamic_window& dw, Goal goal) //method
+void calc_final_input(State roomba, Speed& u, Dynamic_Window& dw, Goal goal) //method
 {
     double min_cost = 100000000.0;
     Speed min_u = u;
@@ -261,10 +261,10 @@ void calc_final_input(State roomba, Speed& u, Dynamic_window& dw, Goal goal) //m
     for(double i = dw.max_v; i > dw.min_v; i -= v_reso) {
         for(double j = 0; (center + j) < dw.max_omega; j += yawrate_reso) {
             calc_trajectory(traj, roomba, i, center + j);
-            to_goal_cost = calc_to_goal(traj, goal, romba);
-            goal_dist = 3.0 * calc_to_goal_cost(traj, goal);
+            to_goal_cost = calc_to_goal_cost(traj, goal, roomba);
+            goal_dist = 3.0 * calc_goal_dist(traj, goal);
 
-            ob_cost = calc_obsatcle_cost(roomba, traj);
+            ob_cost = calc_obstacle_cost(roomba, traj);
 
 
             final_cost = to_goal_cost + goal_dist + speed_cost + ob_cost;
@@ -275,7 +275,7 @@ void calc_final_input(State roomba, Speed& u, Dynamic_window& dw, Goal goal) //m
                 min_u.omega = center + j;
             }
 
-            calc_trajectory(traj roomba, i, center - j);
+            calc_trajectory(traj, roomba, i, center - j);
             to_goal_cost = calc_to_goal_cost(traj, goal, roomba);
             goal_dist = 3.0 * calc_goal_dist(traj, goal);
 
@@ -309,9 +309,9 @@ void lasercallback(const sensor_msgs::LaserScan::ConstPtr& msg) //method
 {
     sensor_msgs::LaserScan _msg = *msg;
 
-    for(int i=0; i<N; i;;) {
-        Ldata[i].angle = msg.angle_min + i*_msg.angle_increment;
-        Ldata[i].range = _msg.range[i];
+    for(int i=0; i<N; i++) {
+        Ldata[i].angle = _msg.angle_min + i*_msg.angle_increment;
+        Ldata[i].range = _msg.ranges[i];
     }
 }
 
@@ -330,7 +330,7 @@ int main(int argc, char **argv)
     private_nh.getParam("min_speed", min_speed);
     private_nh.getParam("max_yawrate", max_yawrate);
     private_nh.getParam("max_accel", max_accel);
-    private_nh.getParam("max_dyawrate" max_dyawrate);
+    private_nh.getParam("max_dyawrate", max_dyawrate);
     private_nh.getParam("v_reso", v_reso);
     private_nh.getParam("yawrate_reso", yawrate_reso);
     private_nh.getParam("dt", dt);
@@ -341,10 +341,10 @@ int main(int argc, char **argv)
     private_nh.getParam("roomba_v_gain", roomba_v_gain);
     private_nh.getParam("roomba_omega_gain", roomba_omega_gain);
 
-    ros::Publisher ctrl_pub = roomba_ctrl_pub.advertise<roombs_500driver_meiji::RoombaCtrl>("roomba/control", 1);
+    ros::Publisher ctrl_pub = roomba_ctrl_pub.advertise<roomba_500driver_meiji::RoombaCtrl>("roomba/control", 1);
     ros::Subscriber laser_sub = scan_laser_sub.subscribe("scan", 1, lasercallback);
-    ros::Subscriber est_pose_sub = est_pose_subscribe("chibi20_2/estimated_pose", 1, estpose_callback); //look for chibi20_2/estimated_pose
-    ros::Subscriber target_pose_sub = target_pose_subscribe("chibi20_2/target", 1, target_callback); //look for chibi20_2/target
+    ros::Subscriber est_pose_sub = est_pose.subscribe("chibi20_2/estimated_pose", 1, estpose_callback); //look for chibi20_2/estimated_pose
+    ros::Subscriber target_pose_sub = target_pose.subscribe("chibi20_2/target", 1, targetpose_callback); //look for chibi20_2/target
     ros::Subscriber whiteline_sub = whiteline.subscribe("whiteline", 1, whiteline_callback);
     ros::Rate loop_rate(10);
 
@@ -352,9 +352,9 @@ int main(int argc, char **argv)
 
     msg.mode = 11;
 
-    State roomba ={0.0, 0.0, 0.0, 0.0. 0.0};
+    State roomba ={0.0, 0.0, 0.0, 0.0, 0.0};
     // {x, y, yaw,v, omega}
-    Speed u = {0.0 0.0};
+    Speed u = {0.0, 0.0};
     Dynamic_Window dw = {0.0, 0.0, 0.0, 0.0};
     double yaw = 0.0;
 
@@ -380,11 +380,61 @@ int main(int argc, char **argv)
             msg.cntl.angular.z = 0.13;
         }
         else{
-            msg.cnntl.angular.z = 0.0;
+            msg.cntl.angular.z = 0.0;
         }
     }
 
-    while()
+    while(white_line_detector == true) {
+
+        ROS_INFO("white_line");
+
+        msg.cntl.linear.x = 0.0;
+        msg.cntl.angular.z = 0.0;
+        ctrl_pub.publish(msg);
+        sleep(5);
+
+        ROS_INFO("Restart");
+
+        msg.cntl.linear.x = 0.2;
+        msg.cntl.angular.z = 0.0;
+        ctrl_pub.publish(msg);
+        sleep(1);
+
+        break;
+    }
+
+    if(dist == false && roomba.x > 2.0) {
+        dist = true;
+    }
+
+    //check goal
+
+    //ROS_INFO("x = %f, goal_dist = %f", roomba.x, sqrt(pow(roomba.x - goal.x, 2.0) + pow(roomba.y - goal.y, 2.0)));
+
+    if(dist == true && sqrt(pow(roomba.x - goal.x, 2.0) + pow(roomba.y - goal.y, 2.0)) < 0.4) {
+        ROS_INFO("Goal");
+        msg.cntl.linear.x = 0.0;
+        msg.cntl.angular.z = 0.0;
+        msg.mode = 0;
+        ctrl_pub.publish(msg);
+        loop_rate.sleep();
+        return 0;
+    }
+
+    ctrl_pub.publish(msg);
+
+
+
+
+    loop_rate.sleep();
+    }
+
+    return 0;
+}
+
+
+
+
 
 
 
