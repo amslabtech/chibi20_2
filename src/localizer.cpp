@@ -17,8 +17,8 @@ class Particle
 public:
     Particle();
     void p_init(double,double,double,double,double,double);
-    void p_motion_updata(geometry_msgs::PoseStamped,geometry_msgs::PoseStamped);
-    void p_measurement_updata();
+    void p_motion_update(geometry_msgs::PoseStamped,geometry_msgs::PoseStamped);
+    void p_measurement_update();
     void p_move(double,double,double);
 
     geometry_msgs::PoseStamped pose;
@@ -70,7 +70,7 @@ double weight_slow = 0.0;
 double weight_fast = 0.0;
 
 bool get_map = false;       //mapを取得したかどうかの判定
-bool updata_flag = false;   //更新するかどうかの判定
+bool update_flag = false;   //更新するかどうかの判定
 
 //メルセンヌツイスタ(乱数生成)
 std::random_device seed;
@@ -252,7 +252,7 @@ double get_Range(double x,double y,double yaw)
 }
 
 //更新するかしないかの判定
-bool judge_updata(double distance_value,double angle_value)
+bool judge_update(double distance_value,double angle_value)
 {
     if(distance_value > 0.2 || angle_value > 0.15){
         return true;
@@ -299,7 +299,7 @@ void Particle::p_init(double x,double y,double yaw,double cov_x,double cov_y,dou
 }
 
 //Particleの動きを更新
-void Particle::p_motion_updata(geometry_msgs::PoseStamped current,geometry_msgs::PoseStamped previous)
+void Particle::p_motion_update(geometry_msgs::PoseStamped current,geometry_msgs::PoseStamped previous)
 {
     double dx;
     double dy;
@@ -315,7 +315,7 @@ void Particle::p_motion_updata(geometry_msgs::PoseStamped current,geometry_msgs:
     distance_sum += sqrt(dx*dx + dy*dy);
     angle_sum += fabs(dyaw);
 
-    updata_flag = judge_updata(distance_sum,angle_sum);
+    update_flag = judge_update(distance_sum,angle_sum);
 
     //particleを移動
     for(int i = 0; i < N; i++){
@@ -324,7 +324,7 @@ void Particle::p_motion_updata(geometry_msgs::PoseStamped current,geometry_msgs:
 }
 
 //Particleの尤度の計算
-void Particle::p_measurement_updata()
+void Particle::p_measurement_update()
 {
     double angle;
     double map_range;
@@ -441,13 +441,13 @@ int main(int argc,char **argv)
 
             //Particleの動きを更新
             for(int i = 0; i < N; i++){
-                particles[i].p_motion_updata(current_pose,previous_pose);
+                particles[i].p_motion_update(current_pose,previous_pose);
             }
 
             //尤度処理
-            if(updata_flag){
+            if(update_flag){
                 for(int i = 0; i < N; i++){
-                    particles[i].p_measurement_updata();
+                    particles[i].p_measurement_update();
                     weight_sum += particles[i].weight;
                 }
                 for(int i = 0; i < N; i++){
@@ -511,7 +511,7 @@ int main(int argc,char **argv)
             }
 
             try{
-                updata_flag = false;
+                update_flag = false;
 
                 //尤度が一番大きいparticleを算出
                 estimated_pose.header.frame_id = "map";

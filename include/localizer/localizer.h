@@ -5,6 +5,8 @@
 #include "sensor_msgs/LaserScan.h"
 #include "nav_msgs/OccupancyGrid.h"
 #include "nav_msgs/Odometry.h"
+#include "geometry_msgs/Pose.h"
+#include "geometry_msgs/PoseArray"
 #include "geometry_msgs/Pose2D.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "tf/transform_listener.h"
@@ -17,46 +19,57 @@ class Particle
 {
 public:
     Particle();
+    void p_init(double,double,double,double,double,double);
+    void p_motion_updata_update(geometry_msgs::PoseStamped,geometry_msgs::PoseStamped);
+    void p_measurement_update();
+    void p_move(double,double,double);
+
+    geometry_msgs::PoseStamped pose;
+    double weight;
+
 private:
     //method
-    void p_init();                  //Particleの初期化
-    void p_motion_updata();         //Particleの動きを更新
-    void p_measurement_updata();    //Particleの尤度計算
-
     void map_callback(const nav_msgs::OccupancyGrid::ConstPtr&);
     void laser_callback(const sensor_msgs::LaserScan::ConstPtr&);
     void odometry_callback(const nav_msgs::Odometry::ConstPtr&);
 
-    float random();                             //random function(0~1)
-    float random_normal(float mu,float sigma)   //正規分布
-    int index();                                //indexの計算
-    int grid_data();                            //Griddataの取得
-    float get_Yaw();                            //Yaw取得
-    bool judge_updata(geometry_msgs::PoseStamped current,geometry_msgs::PoseStamped previous);  //更新するかしないかの判断
+    int index(double,double);                   //indexの計算
+    int grid_data(double,double);               //Griddataの取得
+    double get_Yaw(geometry_msgs::Quaternion);  //Yaw取得
+    double angle_diff(double,double);           //角度差の算出
+    double get_Range(double,double,double);     //Rangeの更新
+    bool judge_updata(double,double);           //更新するかしないかの判断
 
     //parameter
     int N;                  //Particleの数
-    float weight;           //尤度
-    float theta;            //Yaw
-    float x_sigma;
-    float y_sigma;
-    float yaw_sigma;
-    float move_noise_x;
-    float move_noise_y;
-    float move_noise_yaw;
-    double average_length;  //LiDARからの情報
-    bool get_map;           //mapを取得したどうかの判定
+    double INIT_X;
+    double INIT_Y;
+    double INIT_YAW;
+    double INIT_X_COV;
+    double INIT_Y_COV;
+    double INIT_YAW_COV;
+    double MAX_RANGE;
+    int RANGE_STEP;
+    double X_TH;
+    double Y_TH;
+    double YAW_TH;
+    double P_COV;
+    double MOVE_X_COV;
+    double MOVE_Y_COV;
+    double MOVE_YAW_COV;
+    double ALPHA_SLOW;
+    double ALPHA_FAST;
 
     //member
     ros::NodeHandle nh;
     ros::NodeHandle nh_private;
 
-    ros::Subscriber sub_map;
-    ros::Subscriber sub_laser;
-    ros::Subscriber sub_odometry;
+    ros::Subscriber map_sub;
+    ros::Subscriber lsr_sub;
+    ros::Subscriber odo_sub;
 
-    ros::Publisher pub_GPP;
-    ros::Publisher pub_LMC;
+    ros::Publisher lmc_sub;
+    ros::Publisher gpp_sub;
 
     geometry_msgs::PoseStamped estimated_pose;
     geometry_msgs::PoseStamped current_pose;
