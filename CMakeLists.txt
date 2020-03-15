@@ -144,6 +144,7 @@ include
 #  add_executable(move src/move.cpp)
  add_executable(global_path_planner src/global_path_planner.cpp)
  add_executable(localizer src/localizer.cpp)
+# add_executable(localizer2 src/localizer2.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -154,6 +155,7 @@ include
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 
+# add_dependencies(localizer2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(localizer ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(global_path_planner  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(roomba_controller  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -162,6 +164,7 @@ add_dependencies(roomba_controller  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin
 
  ## Specify libraries to link a library or executable target against
 target_link_libraries(localizer ${catkin_LIBRARIES} )
+#  target_link_libraries(localizer2 ${catkin_LIBRARIES} )
 target_link_libraries(global_path_planner   ${catkin_LIBRARIES} )
 target_link_libraries(roomba_controller   ${catkin_LIBRARIES} )
 #  target_link_libraries(laser   ${catkin_LIBRARIES} )

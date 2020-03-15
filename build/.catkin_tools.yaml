@@ -1,0 +1,6 @@
+devel_space: /home/tk/catkin_ws/src/chibi20_2/devel
+install: false
+install_space: /home/tk/catkin_ws/src/chibi20_2/install
+profile: default
+source_space: /home/tk/catkin_ws/src/chibi20_2/src
+workspace: /home/tk/catkin_ws/src/chibi20_2
