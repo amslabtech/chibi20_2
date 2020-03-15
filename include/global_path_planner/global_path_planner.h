@@ -29,19 +29,20 @@ public:
 private:
     //method
     void map_callback(const nav_msgs::OccupancyGrid::ConstPtr&);
-    void map_metadata_callback(const nav_msgs::MapMetaData::ConstPtr&);
     void pose_callback(const geometry_msgs::Pose2D::ConstPtr& );
     void path_creator();
-    void map_updater();
     void clean_lists();
     float huristic(const int&,const int&);
     void define_starting_grid();
     void define_goal_grid();
     void open_around();
+    void update_open_list(const int&,const int&);
+    void clean_close_list(const int&,const int&);
     int grid_patern(const int&,const int&);
     void update_close_list();
     void update_searching_grid();
     void check_goal();
+    void add_path_point(const int&,const int&);
     void trace_dealer();
 
 
@@ -59,6 +60,7 @@ private:
     float proto_g;
     float proto_f;
     std::vector<std::vector<int>> grid_map;//int grid_map[row][column];
+    Coordinate adjust;
     Coordinate goal_grid;
     Coordinate searching_grid;
     Coordinate landmark[4];
@@ -68,8 +70,6 @@ private:
 
 
     //member
-    // static const int row=4000;
-    // static const int column=4000;
     ros::NodeHandle n;
     ros::NodeHandle private_n;
     ros::Publisher pub_path;
