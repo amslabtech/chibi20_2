@@ -6,7 +6,7 @@
 #include "nav_msgs/OccupancyGrid.h"
 #include "nav_msgs/Odometry.h"
 #include "geometry_msgs/Pose.h"
-#include "geometry_msgs/PoseArray"
+#include "geometry_msgs/PoseArray.h"
 #include "geometry_msgs/Pose2D.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "tf/transform_listener.h"
@@ -20,9 +20,10 @@ class Particle
 public:
     Particle();
     void p_init(double,double,double,double,double,double);
-    void p_motion_updata_update(geometry_msgs::PoseStamped,geometry_msgs::PoseStamped);
+    void p_motion_update(geometry_msgs::PoseStamped,geometry_msgs::PoseStamped);
     void p_measurement_update();
     void p_move(double,double,double);
+    void process();
 
     geometry_msgs::PoseStamped pose;
     double weight;
@@ -38,7 +39,8 @@ private:
     double get_Yaw(geometry_msgs::Quaternion);  //Yaw取得
     double angle_diff(double,double);           //角度差の算出
     double get_Range(double,double,double);     //Rangeの更新
-    bool judge_updata(double,double);           //更新するかしないかの判断
+    bool judge_update(double,double);           //更新するかしないかの判断
+    void create_new_cov(double*,double*,double*);
 
     //parameter
     int N;                  //Particleの数
@@ -62,7 +64,7 @@ private:
 
     //member
     ros::NodeHandle nh;
-    ros::NodeHandle nh_private;
+    ros::NodeHandle private_nh;
 
     ros::Subscriber map_sub;
     ros::Subscriber lsr_sub;
@@ -77,7 +79,7 @@ private:
     geometry_msgs::Pose2D pose2d;
     geometry_msgs::PoseArray poses;
     nav_msgs::Odometry odometry;
-    nav_msgs::OcupancyGrid map;
+    nav_msgs::OccupancyGrid map;
     sensor_msgs::LaserScan laser;
 
 };

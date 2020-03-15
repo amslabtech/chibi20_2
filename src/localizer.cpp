@@ -54,9 +54,10 @@ double X_TH;            //xのしきい値
 double Y_TH;            //yのしきい値
 double YAW_TH;          //yawのしきい値
 double P_COV;
-double MOVE_X_COV;      //動作ノイズx
-double MOVE_Y_COV;      //動作ノイズy
-double MOVE_YAW_COV;    //動作ノイズyaw
+double ALPHA_1;         //moveに用いる
+double ALPHA_2;
+double ALPHA_3;
+double ALPHA_4;
 double ALPHA_SLOW;
 double ALPHA_FAST;
 
@@ -310,32 +311,29 @@ Particle::Particle()
 void Particle::p_init(double x,double y,double yaw,double cov_x,double cov_y,double cov_yaw)
 {
     //正規分布でParticleをばらまく(推定位置を引数)
-    std::normal_distribution<> dist_x(x,cov_x);
-    double rand = dist_x(engine);
-    if(rand > 0 && rand < map.info.width*map.info.resolution){
-        pose.pose.position.x = rand;
-    }
+    do{
+        std::normal_distribution<> dist_x(x,cov_x);
+        double rand = dist_x(engine);
+        if(rand > 0 && rand < map.info.width*map.info.resolution)
+            pose.pose.position.x = rand;
 
-    std::normal_distribution<> dist_y(y,cov_y);
-    rand = dist_y(engine);
-    if(rand > 0 && rand < map.info.height*map.info.resolution){
-        pose.pose.position.y = rand;
-    }
+        std::normal_distribution<> dist_y(y,cov_y);
+        rand = dist_y(engine);
+        if(rand > 0 && rand < map.info.height*map.info.resolution)
+            pose.pose.position.y = rand;
 
-    std::normal_distribution<> dist_yaw(yaw,cov_yaw);
-    rand = dist_yaw(engine);
-    if(rand > -M_PI && rand < M_PI){
-        quaternionTFToMsg(tf::createQuaternionFromYaw(rand),pose.pose.orientation);
-    }
+        std::normal_distribution<> dist_yaw(yaw,cov_yaw);
+        rand = dist_yaw(engine);
+        if(rand > -M_PI && rand < M_PI)
+            quaternionTFToMsg(tf::createQuaternionFromYaw(rand),pose.pose.orientation);
+    }while(map.data[index(pose.pose.position.x,pose.pose.position.y)] != 0);
 
 }
 
 //Particleの動きを更新
 void Particle::p_motion_update(geometry_msgs::PoseStamped current,geometry_msgs::PoseStamped previous)
 {
-    double dx;
-    double dy;
-    double dyaw;
+    double dx, dy, dyaw;
     double distance_sum = 0.0;
     double angle_sum    = 0.0;
 
@@ -350,9 +348,7 @@ void Particle::p_motion_update(geometry_msgs::PoseStamped current,geometry_msgs:
     update_flag = judge_update(distance_sum,angle_sum);
 
     //particleを移動
-    for(int i = 0; i < N; i++){
-        particles[i].p_move(dx,dy,dyaw);
-    }
+    p_move(dx,dy,dyaw);
 }
 
 //Particleの尤度の計算
@@ -375,16 +371,38 @@ void Particle::p_measurement_update()
 //Particleを(dx,dy,dyaw)移動させる
 void Particle::p_move(double dx,double dy,double dyaw)
 {
+    double delta_rot1;
+    double delta_rot2;
+    double delta_trans;
+    double delta_rot1_noise;
+    double delta_rot2_noise;
+    double delta_rot1_hat;
+    double delta_rot2_hat;
+    double delta_trans_hat;
     double yaw = get_Yaw(pose.pose.orientation);
-    double distance = sqrt(dx*dx + dy*dy);
 
-    std::normal_distribution<> dist_dx(0,MOVE_X_COV);
-    std::normal_distribution<> dist_dy(0,MOVE_Y_COV);
-    std::normal_distribution<> dist_dyaw(0,MOVE_YAW_COV);
+    if(sqrt(dx*dx + dy*dy) < 0.01)
+        delta_rot1 = 0;
+    else
+        delta_rot1 = dyaw;
 
-    pose.pose.position.x += distance * cos(yaw) + dist_dx(engine);
-    pose.pose.position.y += distance * sin(yaw) + dist_dy(engine);
-    quaternionTFToMsg(tf::createQuaternionFromYaw(yaw + dyaw + dist_dyaw(engine)),pose.pose.orientation);
+    delta_trans = sqrt(dx*dx +dy*dy);
+    delta_rot2  = angle_diff(dyaw,delta_rot1);
+
+    delta_rot1_noise = std::min(fabs(angle_diff(delta_rot1,0.0)),fabs(angle_diff(delta_rot1,M_PI)));
+    delta_rot2_noise = std::min(fabs(angle_diff(delta_rot2,0.0)),fabs(angle_diff(delta_rot2,M_PI)));
+
+    std::normal_distribution<> dist_rot1(0.0,(ALPHA_1*delta_rot1_noise*delta_rot1_noise - ALPHA_2*delta_trans*delta_trans));
+    std::normal_distribution<> dist_rot2(0.0,(ALPHA_1*delta_rot2_noise*delta_rot2_noise - ALPHA_2*delta_trans*delta_trans));
+    std::normal_distribution<> dist_trans(0.0,(ALPHA_3*delta_trans*delta_trans + ALPHA_4*delta_rot1_noise*delta_rot1_noise + ALPHA_4*delta_rot2_noise*delta_rot2_noise));
+
+    delta_rot1_hat  = angle_diff(delta_rot1,dist_rot1(engine));
+    delta_rot2_hat  = angle_diff(delta_rot2,dist_rot2(engine));
+    delta_trans_hat = delta_trans - dist_trans(engine);
+
+    pose.pose.position.x += delta_trans_hat * cos(yaw + delta_rot1_hat);
+    pose.pose.position.y += delta_trans_hat * sin(yaw + delta_rot2_hat);
+    quaternionTFToMsg(tf::createQuaternionFromYaw(yaw + delta_rot1_hat + delta_rot2_hat),pose.pose.orientation);
 }
 
 int main(int argc,char **argv)
@@ -417,9 +435,10 @@ int main(int argc,char **argv)
     private_nh.getParam("X_TH",X_TH);
     private_nh.getParam("Y_TH",Y_TH);
     private_nh.getParam("P_COV",P_COV);
-    private_nh.getParam("MOVE_X_COV",MOVE_X_COV);
-    private_nh.getParam("MOVE_Y_COV",MOVE_Y_COV);
-    private_nh.getParam("MOVE_YAW_COV",MOVE_YAW_COV);
+    private_nh.getParam("ALPHA_1",ALPHA_1);
+    private_nh.getParam("ALPHA_2",ALPHA_2);
+    private_nh.getParam("ALPHA_3",ALPHA_3);
+    private_nh.getParam("ALPHA_4",ALPHA_4);
     private_nh.getParam("ALPHA_SLOW",ALPHA_SLOW);
     private_nh.getParam("ALPHA_FAST",ALPHA_FAST);
 
