@@ -166,13 +166,10 @@ add_dependencies(roomba_controller  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin
 
  ## Specify libraries to link a library or executable target against
 target_link_libraries(localizer ${catkin_LIBRARIES} )
-<<<<<<< HEAD
 #  target_link_libraries(localizer2 ${catkin_LIBRARIES} )
 target_link_libraries(global_path_planner   ${catkin_LIBRARIES} )
-=======
 # target_link_libraries(global_path_planner   ${catkin_LIBRARIES} )
 target_link_libraries(global_path_tester   ${catkin_LIBRARIES} )
->>>>>>> e14bf4983b55a333f9a14d1eab34428bfe3d6873
 target_link_libraries(roomba_controller   ${catkin_LIBRARIES} )
 #  target_link_libraries(laser   ${catkin_LIBRARIES} )
 #  target_link_libraries(move   ${catkin_LIBRARIES} )
