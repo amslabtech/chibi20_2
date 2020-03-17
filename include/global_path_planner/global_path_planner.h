@@ -5,7 +5,7 @@
 #include "nav_msgs/OccupancyGrid.h"
 #include "geometry_msgs/Pose2D.h"
 #include "nav_msgs/Path.h"
-
+#include "geometry_msgs/PointStamped.h"
 struct Costs
 {
     float g;//g値
@@ -29,27 +29,33 @@ public:
 private:
     //method
     void map_callback(const nav_msgs::OccupancyGrid::ConstPtr&);
-    void map_metadata_callback(const nav_msgs::MapMetaData::ConstPtr&);
     void pose_callback(const geometry_msgs::Pose2D::ConstPtr& );
     void path_creator();
-    void map_updater();
     void clean_lists();
     float huristic(const int&,const int&);
     void define_starting_grid();
     void define_goal_grid();
     void open_around();
+    void open_grid(const int&,const int&,const int&);
+    void update_open_list(const int&,const int&);
+    void clean_close_list(const int&,const int&);
     int grid_patern(const int&,const int&);
     void update_close_list();
     void update_searching_grid();
     void check_goal();
+    void add_path_point(const int&,const int&);
     void trace_dealer();
+    //for debagging
+    void show_open_list();
+    void show_close_list();
 
 
 
     //parameter
     int row;
     int column;
-    const int move_cost[4]={1,1,1,1};//左上右下の順番
+    int scale;
+    const float move_cost[8]={1,sqrt(2),1,sqrt(2),1,sqrt(2),1,sqrt(2)};//左から８方向
     int Hz;
     int wall_border;
     int wall_cost;
@@ -59,6 +65,7 @@ private:
     float proto_g;
     float proto_f;
     std::vector<std::vector<int>> grid_map;//int grid_map[row][column];
+    Coordinate adjust;
     Coordinate goal_grid;
     Coordinate searching_grid;
     Coordinate landmark[4];
@@ -68,8 +75,6 @@ private:
 
 
     //member
-    // static const int row=4000;
-    // static const int column=4000;
     ros::NodeHandle n;
     ros::NodeHandle private_n;
     ros::Publisher pub_path;
@@ -81,6 +86,8 @@ private:
     nav_msgs::OccupancyGrid updated_map;//経路封鎖時にLocalMapCreaterから受取
     geometry_msgs::Pose2D current_pose;//経路封鎖時のスタート位置用
     nav_msgs::Path global_path;//LocalPathPlannerに出力
+    //for debagging
+    ros::Publisher pub_open_grid;
 
     //
 

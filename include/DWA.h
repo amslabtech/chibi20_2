@@ -45,22 +45,22 @@ struct Dynamic_Window{
 class DWA
 {
 public:
-    calc();
+    real_velocity();
 
 private:
     //method
-    void estpose_callback(const geometry_msgs::poseWithCovarianceStamped::ConstPtr& msg)
-    void targetpose_callback(const geometry_msgs::PointStamped::ConstPtr& msg)
-    void whiteline_callback(const std_msgs::Bool msg)
-   // void motion(State& roomba, Speed u)
-   // void calc_dynamic_window(Dynamic_Window& dw, State& roomba)
-   // void calc_trajectory(std::vector<State>& traj, State roomba, double i double j)
-   // double calc_to_goal_cost(std::vector<State>& traj, Goal goal, State roomba)
-   // double calc_goal_dist(std::vector<State>& traj, Goal goal)
-   // double calc_speed_cost(std::vector<>State traj)
-   // double calc_obsatcle_cost(State roomba, std::vector<State>& traj)
-   // void calc_final_input(State roomba, Speed& u, Dynamic_window& dw, Goal goal)
-   // void dwa_control(State& roomba, Speed& u, Goal goal, Dynamic_Window dw)
+    void estpose_callback(const geometry_msgs::poseWithCovarianceStamped::ConstPtr& msg);
+    void targetpose_callback(const geometry_msgs::PointStamped::ConstPtr& msg);
+    void whiteline_callback(const std_msgs::Bool msg);
+    void motion();
+    void dynamic_window();
+    void trajectory();
+    double to_goal_cost();
+    double goal_dist();
+    double speed_cost();
+    double obsatcle_cost();
+    void final_input();
+    void dwa_control();
     void lasercallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 
     //parameter
@@ -78,6 +78,8 @@ private:
     double speed_cost_gain;
     double obstacle_cost_gain;
     double robot_radius;
+    double roomba_v_gain;
+    double roomba_omega_gain;
 
     //member
     ros::NodeHandle roomba_ctrl_pub;
