@@ -73,7 +73,7 @@ double weight_fast = 0.0;
 bool get_map = false;       //mapを取得したかどうかの判定
 bool update_flag = false;   //更新するかどうかの判定
 
-//メルセンヌツイスタ(乱数生成)
+//乱数生成
 std::random_device seed;
 std::mt19937 engine(seed());
 
@@ -261,8 +261,6 @@ bool judge_update(double distance_value,double angle_value)
     else{
         return false;
     }
-    distance_value = 0.0;
-    angle_value = 0.0;
 }
 
 void create_new_cov(double* cov_1,double* cov_2,double* cov_3)
@@ -310,7 +308,7 @@ Particle::Particle()
 //Particleの初期化
 void Particle::p_init(double x,double y,double yaw,double cov_x,double cov_y,double cov_yaw)
 {
-    //正規分布でParticleをばらまく(推定位置を引数)
+    //正規分布でParticleをばらまく
     do{
         std::normal_distribution<> dist_x(x,cov_x);
         double rand = dist_x(engine);
@@ -346,6 +344,8 @@ void Particle::p_motion_update(geometry_msgs::PoseStamped current,geometry_msgs:
     angle_sum += fabs(dyaw);
 
     update_flag = judge_update(distance_sum,angle_sum);
+    distance_sum = 0.0;
+    angle_sum = 0.0;
 
     //particleを移動
     p_move(dx,dy,dyaw);
@@ -411,7 +411,7 @@ int main(int argc,char **argv)
     ros::NodeHandle nh;
     ros::NodeHandle private_nh("~");
 
-    ROS_INFO("Start Localizer\n");
+    ROS_INFO("Start Localizer!\n");
 
     //Subscriber
     ros::Subscriber map_sub = nh.subscribe("/map",100,map_callback);
@@ -455,7 +455,7 @@ int main(int argc,char **argv)
 
     ros::Rate rate(10.0);
     while(ros::ok()){
-        if(get_map && !laser.ranges.empty()){
+        if(get_map /* && !laser.ranges.empty() */){
             estimated_pose.header.frame_id = "map";
 
             tf::StampedTransform transform;
@@ -534,16 +534,15 @@ int main(int argc,char **argv)
                 std::uniform_real_distribution<> dist(0.0,1.0);
                 int index = (int)(dist(engine)*N);
                 double beta = 0.0;
-                double mv = particles[max_index].weight;
+                double mv   = particles[max_index].weight;
                 std::vector<Particle> new_particles;
 
                 double w;
-                if((1-weight_fast/weight_slow) > 0){
+                if((1-weight_fast/weight_slow) > 0)
                     w = 1 - weight_fast/weight_slow;
-                }
-                else{
+                else
                     w = 0.0;
-                }
+
                 for(int i = 0; i < N; i++){
                     if(w < dist(engine)){
                         beta += dist(engine) * 2.0 * mv;

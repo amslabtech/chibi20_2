@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="map_file" default="$(find chibi20_2)/mapdata/chibi20_2_dkan7.yaml"/>
+
+    <node pkg="map_server" type="map_server" name="map_server"  args="$(arg map_file)"/>
+
+    <node pkg="chibi20_2" type="localizer" name="localizer" output="screen"/>
+        <rosparam file="$(find chibi20_2)/config/param/localizer.yaml" command="load" />
+
+</launch>
