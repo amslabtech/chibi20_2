@@ -11,6 +11,7 @@
 
 #include <math.h>
 #include <random>
+#include <iostream>
 
 class Particle
 {
@@ -564,37 +565,41 @@ int main(int argc,char **argv)
                 create_new_cov(&x_cov,&y_cov,&yaw_cov);
             }
 
-            try{
-                update_flag = false;
+            update_flag = false;
+        }
 
-                //尤度が一番大きいparticleを算出
-                estimated_pose.header.frame_id = "map";
-                estimated_pose.pose = particles[max_index].pose.pose;
 
-                //estimated_poseをestimated_pose2dへ
-                geometry_msgs::Pose2D estimated_pose2d;
+        //尤度が一番大きいparticleを算出
+        estimated_pose.pose = particles[max_index].pose.pose;
 
-                estimated_pose2d.x     = estimated_pose.pose.position.x;
-                estimated_pose2d.y     = estimated_pose.pose.position.y;
-                estimated_pose2d.theta = get_Yaw(estimated_pose.pose.orientation);
-                lmc_sub.publish(estimated_pose2d);
-                gpp_sub.publish(estimated_pose2d);
+        //estimated_poseをestimated_pose2dへ
+        geometry_msgs::Pose2D estimated_pose2d;
+        estimated_pose2d.x     = estimated_pose.pose.position.x;
+        estimated_pose2d.y     = estimated_pose.pose.position.y;
+        estimated_pose2d.theta = get_Yaw(estimated_pose.pose.orientation);
 
-                tf::StampedTransform map_transform;
-                map_transform.setOrigin(tf::Vector3(estimated_pose.pose.position.x,estimated_pose.pose.position.y,0.0));
-                map_transform.setRotation(tf::Quaternion(0,0,get_Yaw(estimated_pose.pose.orientation),1));
-                tf::Stamped<tf::Pose> tf_stamped(map_transform.inverse(),laser.header.stamp,"base_link");
-                tf::Stamped<tf::Pose> odom_to_map;
-                listener.transformPose("odom",tf_stamped,odom_to_map);
-                tf::Transform latest_tf = tf::Transform(tf::Quaternion(odom_to_map.getRotation()),tf::Point(odom_to_map.getOrigin()));
-                temp_tf_stamped = tf::StampedTransform(latest_tf.inverse(),laser.header.stamp,"map","odom");
-                broadcaster.sendTransform(temp_tf_stamped);
+        std::cout << "estimated_pose.x  : " << estimated_pose2d.x << std::endl;
+        std::cout << "estimated_pose.y  : " << estimated_pose2d.y << std::endl;
+        std::cout << "estimated_pose.yaw: " << estimated_pose2d.theta << std::endl;
 
-            }
-            catch(tf::TransformException ex){
-                ROS_ERROR("ERROR!");
-                ROS_ERROR("%s", ex.what());
-            }
+        lmc_sub.publish(estimated_pose2d);
+        gpp_sub.publish(estimated_pose2d);
+
+
+        try{
+            tf::StampedTransform map_transform;
+            map_transform.setOrigin(tf::Vector3(estimated_pose.pose.position.x,estimated_pose.pose.position.y,0.0));
+            map_transform.setRotation(tf::Quaternion(0,0,get_Yaw(estimated_pose.pose.orientation),1));
+            tf::Stamped<tf::Pose> tf_stamped(map_transform.inverse(),laser.header.stamp,"base_link");
+            tf::Stamped<tf::Pose> odom_to_map;
+            listener.transformPose("odom",tf_stamped,odom_to_map);
+            tf::Transform latest_tf = tf::Transform(tf::Quaternion(odom_to_map.getRotation()),tf::Point(odom_to_map.getOrigin()));
+            temp_tf_stamped = tf::StampedTransform(latest_tf.inverse(),laser.header.stamp,"map","odom");
+            broadcaster.sendTransform(temp_tf_stamped);
+        }
+        catch(tf::TransformException ex){
+            ROS_ERROR("ERROR!");
+            ROS_ERROR("%s", ex.what());
         }
         ros::spinOnce();
         rate.sleep();
