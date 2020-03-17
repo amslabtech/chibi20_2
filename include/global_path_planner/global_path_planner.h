@@ -45,6 +45,7 @@ private:
     void check_goal();
     void add_path_point(const int&,const int&);
     void trace_dealer();
+    void make_limit();
     //for debagging
     void show_open_list();
     void show_close_list();
@@ -64,11 +65,14 @@ private:
     bool reached_start=false;
     float proto_g;
     float proto_f;
+    int checkpoint;
     std::vector<std::vector<int>> grid_map;//int grid_map[row][column];
     Coordinate adjust;
     Coordinate goal_grid;
     Coordinate searching_grid;
-    Coordinate landmark[4];
+    Coordinate downlimit;
+    Coordinate uplimit;
+    const Coordinate landmark[10]={{3000,2700},{2840,2730},{2920,3030},{3100,3020},{3200,3000},{3110,2670},{3030,2340},{2880,2370},{2760,2410},{2840,2730}};//中央、中央左から時計回り
     Coordinate tracing_grid;
     std::vector<std::vector<Costs>>open_list;//Costs open_list[row][column];
     std::vector<std::vector<Costs>>close_list;//Costs close_list[row][column];

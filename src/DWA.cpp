@@ -9,36 +9,36 @@ const int N = 720; //(_msg.angle_max - msg.angle_max) / _msg.angle_increment
 
 bool turn = false; //false = Right, true = Left
 
-struct State{
-    double x;
-    double y;
-    double yaw;
-    double v;
-    double omega;
-};
-
-struct Speed{
-   double v;
-   double omega;
-};
-
-struct Goal{
-    double x;
-    double y;
-};
-
-struct LaserData{
-    double angle;
-    double range;
-};
-
-struct Dynamic_Window{
-    double min_v;
-    double max_v;
-    double min_omega;
-    double max_omega;
-};
-
+// struct State{
+//     double x;
+//     double y;
+//     double yaw;
+//     double v;
+//     double omega;
+// };
+//
+// struct Speed{
+//    double v;
+//    double omega;
+// };
+//
+// struct Goal{
+//     double x;
+//     double y;
+// };
+//
+// struct LaserData{
+//     double angle;
+//     double range;
+// };
+//
+// struct Dynamic_Window{
+//     double min_v;
+//     double max_v;
+//     double min_omega;
+//     double max_omega;
+// };
+//
 LaserData Ldata[N];
 Goal goal = {0, 0};
 geometry_msgs::PoseWithCovarianceStamped est_pose_msg;
@@ -64,7 +64,7 @@ void DWA::motion(State& roomba, Speed u) //method
     roomba.x += u.v * std::cos(roomba.yaw) * dt;
     roomba.y += u.v * std::sin(roomba.yaw) * dt;
     roomba.v = u.v;
-    roomba.omega - u.omega;
+    roomba.omega = u.omega;
 }
 
 void DWA::dynamic_window(Dynamic_Window& dw, State& roomba) //method

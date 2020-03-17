@@ -5,7 +5,7 @@
 #include "std_msgs/Bool.h"
 #include "roomba_500driver_meiji/RoombaCtrl.h"
 #include "sensor_msgs/LaserScan.h"
-#include "nav_msgs/Odometory.h"
+#include "nav_msgs/Odometry.h"
 #include "math.h"
 #include <tf/tf.h>
 #include "geometry_msgs/PointStamped.h"
@@ -20,10 +20,10 @@ struct State{
     double omega;
 };
 
-//struct Speed{
-//    double v;
-//    double omega;
-//};
+struct Speed{
+   double v;
+   double omega;
+};
 
 struct Goal{
     double x;
@@ -45,15 +45,15 @@ struct Dynamic_Window{
 class DWA
 {
 public:
-    real_velocity();
+    // real_velocity();
 
 private:
     //method
-    void estpose_callback(const geometry_msgs::poseWithCovarianceStamped::ConstPtr& msg);
-    void targetpose_callback(const geometry_msgs::PointStamped::ConstPtr& msg);
-    void whiteline_callback(const std_msgs::Bool msg);
-    void motion();
-    void dynamic_window();
+    void estpose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr&);
+    void targetpose_callback(const geometry_msgs::PointStamped::ConstPtr&);
+    void whiteline_callback(const std_msgs::Bool);
+    void motion(State&,Speed);
+    void dynamic_window(Dynamic_Window&,State&)
     void trajectory();
     double to_goal_cost();
     double goal_dist();
@@ -61,7 +61,7 @@ private:
     double obsatcle_cost();
     void final_input();
     void dwa_control();
-    void lasercallback(const sensor_msgs::LaserScan::ConstPtr& msg)
+    void lasercallback(const sensor_msgs::LaserScan::ConstPtr&);
 
     //parameter
     double max_speed;
@@ -90,10 +90,10 @@ private:
     ros::NodeHandle whiteline;
     ros::NodeHandle private_nh;
 
-    ros::Subsciber laser_sub;
-    ros::Subsciber est_pose_sub;
-    ros::Subsciber target_pose_sub;
-    ros::Subsciber whiteline_sub;
+    ros::Subscriber laser_sub;
+    ros::Subscriber est_pose_sub;
+    ros::Subscriber target_pose_sub;
+    ros::Subscriber whiteline_sub;
 
     ros::Publisher ctrl_pub;
 

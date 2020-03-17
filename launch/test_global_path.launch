@@ -2,6 +2,6 @@
 <launch>
     <arg name="map_file" default="$(find chibi20_2)/mapdata/chibi20_2_dkan7.yaml"/>
     <node pkg="map_server" type="map_server" name="global_map"  args="$(arg map_file)"/>
-    <node pkg="chibi20_2" type="global_path_tester" name="global_path_tester" output="screen"/>
+    <node pkg="chibi20_2" type="global_path_planner" name="global_path_planner" output="screen"/>
 
 </launch>

@@ -3,6 +3,9 @@
 A_Star_Planner::A_Star_Planner() :private_n("~")
 {
     //parameter
+    private_n.param("row",row,{1000});
+    private_n.param("column",column,{1000});
+    private_n.param("scale",scale,{20});
     private_n.param("Hz",Hz,{1});
     private_n.param("wall_border",wall_border,{50});
     private_n.param("wall_cost",wall_cost,{100000000});
@@ -11,9 +14,6 @@ A_Star_Planner::A_Star_Planner() :private_n("~")
     private_n.param("reached_start",reached_start,{false});
     private_n.param("proto_g",proto_g,{100000000});
     private_n.param("proto_f",proto_f,{100000000});
-    private_n.param("row",row,{1000});
-    private_n.param("column",column,{1000});
-    private_n.param("scale",scale,{20});
 
     // //subscriber
     sub_map=n.subscribe("map",10,&A_Star_Planner::map_callback,this);
