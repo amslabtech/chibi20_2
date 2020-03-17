@@ -157,10 +157,6 @@ include
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 9ecd608f96e3839d4be80900dacdd030fa640715
 #add_dependencies(amcl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(localizer ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(DWA ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
