@@ -47,28 +47,32 @@ class DWA
 public:
     // real_velocity();
 
-private:
-    //method
     void estpose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr&);
     void targetpose_callback(const geometry_msgs::PointStamped::ConstPtr&);
     void whiteline_callback(const std_msgs::Bool);
-    void motion(State&,Speed);
-    void dynamic_window(Dynamic_Window&,State&)
-    void trajectory();
-    double to_goal_cost();
-    double goal_dist();
-    double speed_cost();
-    double obsatcle_cost();
-    void final_input();
-    void dwa_control();
     void lasercallback(const sensor_msgs::LaserScan::ConstPtr&);
+private:
+    //method
+   // void estpose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr&);
+   // void targetpose_callback(const geometry_msgs::PointStamped::ConstPtr&);
+   // void whiteline_callback(const std_msgs::Bool);
+    void motion(State&,Speed);
+    void calc_dynamic_window(Dynamic_Window&,State&);
+    void calc_trajectory(std::vector<State>&, State, double, double);
+    double calc_to_goal_cost(std::vector<State>&, Goal, State);
+    double calc_goal_dist(std::vector<State>&, Goal);
+    double calc_speed_cost(std::vector<State>);
+    double calc_obstacle_cost(State, std::vector<State>);
+    void calc_final_input(State, Speed&, Dynamic_Window&, Goal);
+    void dwa_control(State&, Speed&, Goal, Dynamic_Window );
+   // void lasercallback(const sensor_msgs::LaserScan::ConstPtr&);
 
     //parameter
     double max_speed;
     double min_speed;
     double max_yawrate;
     double max_accel;
-    double max_drawrate;
+    double max_dyawrate;
     double v_reso;
     double yawrate_reso;
     double dt;
