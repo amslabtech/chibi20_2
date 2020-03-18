@@ -3,12 +3,12 @@
 //parameter
 
 bool white_line_detector = false;
-bool dist = false;
-
-const int N = 720; //(_msg.angle_max - msg.angle_max) / _msg.angle_increment
-
-bool turn = false; //false = Right, true = Left
-
+// bool dist = false;
+//
+// const int N = 720; //(_msg.angle_max - msg.angle_max) / _msg.angle_increment
+//
+// bool turn = false; //false = Right, true = Left
+//
 // struct State{
 //     double x;
 //     double y;
@@ -42,6 +42,7 @@ bool turn = false; //false = Right, true = Left
 LaserData Ldata[N];
 Goal goal = {0, 0};
 geometry_msgs::PoseWithCovarianceStamped est_pose_msg;
+
 
 void DWA::estpose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg) //method
 {

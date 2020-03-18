@@ -46,6 +46,7 @@ class DWA
 {
 public:
     // real_velocity();
+    // DWA();
 
 private:
     //method
@@ -54,13 +55,13 @@ private:
     void whiteline_callback(const std_msgs::Bool);
     void motion(State&,Speed);
     void dynamic_window(Dynamic_Window&,State&)
-    void trajectory();
-    double to_goal_cost();
-    double goal_dist();
-    double speed_cost();
-    double obsatcle_cost();
-    void final_input();
-    void dwa_control();
+    void trajectory(std::vector<State>&,State,double,double);
+    double to_goal_cost(std::vector<State>&,Goal,State);
+    double goal_dist(std::vector<State>,Goal);
+    double speed_cost(std::vector<State>);
+    double obsatcle_cost(State,std::vector<State>);
+    void final_input(State,Speed&,Dynamic_Window&,Goal);
+    void dwa_control(State&,Speed&,Goal,Dynamic_Window);
     void lasercallback(const sensor_msgs::LaserScan::ConstPtr&);
 
     //parameter
@@ -80,6 +81,11 @@ private:
     double robot_radius;
     double roomba_v_gain;
     double roomba_omega_gain;
+    bool white_line_detector=false;
+    bool dist=false;
+    const int N=720;//(_msg.angle_max-msg.angle_max)/_msg.angle_increment
+    bool turn=false;//f=Right,L=Left
+    Goal goal;
 
     //member
     ros::NodeHandle roomba_ctrl_pub;
