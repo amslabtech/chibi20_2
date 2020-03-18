@@ -2,10 +2,26 @@
 <launch>
 
     <arg name="map_file" default="$(find chibi20_2)/mapdata/chibi20_2_dkan7.yaml"/>
+    <arg name="use_map_topic" default="ture" />
+    <arg name="scan_topic" default="false" />
 
     <node pkg="map_server" type="map_server" name="map_server"  args="$(arg map_file)"/>
 
-    <node pkg="chibi20_2" type="localizer" name="localizer" output="screen"/>
+    <node pkg="chibi20_2" type="localizer" name="localizer" output="screen">
         <rosparam file="$(find chibi20_2)/config/param/localizer.yaml" command="load" />
+    </node>
+
+    <node pkg="roomba_500driver_meiji" name="roomba_500driver_meiji" type="main500" output="screen">
+        <param name="serial_port" value="/dev/ttyUSB0" />
+        <param name="publish_intensity" value="true" />
+        <param name="publish_multiecho" value="false" />
+    </node>
+
+    <node pkg="urg_node" name="urg_node" type="urg_node">
+        <param name="serial_port" value="/dev/ttyACM0" />
+        <param name="frame_id" value="laser" />
+        <param name="publish_intensity" value="true" />
+        <param name="publish_multiecho" value="false" />
+    </node>
 
 </launch>

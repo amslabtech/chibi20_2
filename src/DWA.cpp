@@ -2,7 +2,24 @@
 
 //parameter
 
+double max_speed;
+double min_speed;
+double max_yawrate;
+double max_accel;
+double max_dyawrate;
+double v_reso;
+double yawrate_reso;
+double dt;
+double predict_time;
+double to_goal_cost_gain;
+double dist_gain;
+double speed_cost_gain;
+double obstacle_cost_gain;
+double robot_radius;
+double roomba_v_gain;
+double roomba_omega_gain;
 bool white_line_detector = false;
+<<<<<<< HEAD
 // bool dist = false;
 //
 // const int N = 720; //(_msg.angle_max - msg.angle_max) / _msg.angle_increment
@@ -39,10 +56,34 @@ bool white_line_detector = false;
 //     double max_omega;
 // };
 //
+=======
+bool dist = false;
+
+const int N = 720; //(_msg.angle_max - msg.angle_max) / _msg.angle_increment
+
+bool turn = false; //false = Right, true = Left
+
+>>>>>>> f09ea93f47c662246e2e822aec4974ce6b2ae462
 LaserData Ldata[N];
 Goal goal = {0, 0};
 geometry_msgs::PoseWithCovarianceStamped est_pose_msg;
 
+<<<<<<< HEAD
+=======
+void calc_dynamic_window(Dynamic_Window&,State&);
+
+void calc_final_input(State, Speed&, Dynamic_Window&, Goal);
+
+void estpose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr&);
+
+void targetpose_callback(const geometry_msgs::PointStamped::ConstPtr&);
+
+void whiteline_callback(const std_msgs::Bool);
+
+void lasercallback(const sensor_msgs::LaserScan::ConstPtr&);
+
+void dwa_control(State&, Speed&, Goal, Dynamic_Window);
+>>>>>>> f09ea93f47c662246e2e822aec4974ce6b2ae462
 
 void DWA::estpose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg) //method
 {
@@ -68,7 +109,7 @@ void DWA::motion(State& roomba, Speed u) //method
     roomba.omega = u.omega;
 }
 
-void DWA::dynamic_window(Dynamic_Window& dw, State& roomba) //method
+void DWA::calc_dynamic_window(Dynamic_Window& dw, State& roomba) //method
 {
     Dynamic_Window Vs = {min_speed,
                                     max_speed,
@@ -89,7 +130,7 @@ void DWA::dynamic_window(Dynamic_Window& dw, State& roomba) //method
 return;
 }
 
-void DWA::trajectory(std::vector<State>& traj, State roomba, double i, double j)  //method
+void DWA::calc_trajectory(std::vector<State>& traj, State roomba, double i, double j)  //method
 {
     State roomba_traj = {0.0, 0.0, 0.0, 0.0, 0.0};
     Speed u = {i,j};
@@ -113,7 +154,7 @@ void DWA::trajectory(std::vector<State>& traj, State roomba, double i, double j)
 
 }
 
-double DWA::to_goal_cost(std::vector<State>& traj, Goal goal, State roomba) //method
+double DWA::calc_to_goal_cost(std::vector<State>& traj, Goal goal, State roomba) //method
 {
     // calculation for inner product
 
@@ -143,7 +184,7 @@ double DWA::to_goal_cost(std::vector<State>& traj, Goal goal, State roomba) //me
     return to_goal_cost_gain * error_angle;
 }
 
-double DWA::goal_dist(std::vector<State>& traj, Goal goal)
+double DWA::calc_goal_dist(std::vector<State>& traj, Goal goal)
 {
     double x = goal.x - traj.back().x;
     double y = goal.y - traj.back().y;
@@ -152,14 +193,14 @@ double DWA::goal_dist(std::vector<State>& traj, Goal goal)
     return dist;
 }
 
-double DWA::speed_cost(std::vector<State> traj)
+double DWA::calc_speed_cost(std::vector<State> traj)
 {
     double error_speed = max_speed - traj.back().v;
 
     return speed_cost_gain * error_speed;
 }
 
-double DWA::obstacle_cost(State roomba, std::vector<State> traj)
+double DWA::calc_obstacle_cost(State roomba, std::vector<State> traj)
 {
     int skip_k = 2;
     int skip_l = 10;
@@ -179,7 +220,7 @@ double DWA::obstacle_cost(State roomba, std::vector<State> traj)
     double y_obstacle;
     double yy_obstacle;
 
-    for(int k = 0; k < traj.size(); k += skip_k) {
+    for(unsigned int k = 0; k < traj.size(); k += skip_k) {
         x_traj = traj[k].x;
         y_traj = traj[k].y;
 
@@ -224,7 +265,7 @@ double DWA::obstacle_cost(State roomba, std::vector<State> traj)
     return 1 / min_r;
 }
 
-void DWA::final_input(State roomba, Speed& u, Dynamic_Window& dw, Goal goal) //method
+void DWA::calc_final_input(State roomba, Speed& u, Dynamic_Window& dw, Goal goal) //method
 {
     double min_cost = 100000000.0;
     Speed min_u = u;
@@ -284,7 +325,7 @@ void DWA::dwa_control(State& roomba, Speed& u, Goal goal, Dynamic_Window dw) //m
     calc_final_input(roomba, u, dw, goal);
 }
 
-void DWA::lasercallback(const sensor_msgs::LaserScan::ConstPtr& msg) //method
+void DWA::lasercallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
     sensor_msgs::LaserScan _msg = *msg;
 
@@ -322,8 +363,8 @@ int main(int argc, char **argv)
 
     ros::Publisher ctrl_pub = roomba_ctrl_pub.advertise<roomba_500driver_meiji::RoombaCtrl>("roomba/control", 1);
     ros::Subscriber laser_sub = scan_laser_sub.subscribe("scan", 1, lasercallback);
-    ros::Subscriber est_pose_sub = est_pose.subscribe("chibi20_2/estimated_pose", 1, estpose_callback); //look for chibi20_2/estimated_pose
-    ros::Subscriber target_pose_sub = target_pose.subscribe("chibi20_2/target", 1, targetpose_callback); //look for chibi20_2/target
+    ros::Subscriber est_pose_sub = est_pose.subscribe("chibi20_2/estimated_pose", 1, estpose_callback);
+    ros::Subscriber target_pose_sub = target_pose.subscribe("chibi20_2/target", 1, targetpose_callback);
     ros::Subscriber whiteline_sub = whiteline.subscribe("whiteline", 1, whiteline_callback);
     ros::Rate loop_rate(10);
 
@@ -335,7 +376,7 @@ int main(int argc, char **argv)
     // {x, y, yaw,v, omega}
     Speed u = {0.0, 0.0};
     Dynamic_Window dw = {0.0, 0.0, 0.0, 0.0};
-    double yaw = 0.0;
+   // double yaw = 0.0; //temporarily removed
 
     while(ros::ok())
     {
