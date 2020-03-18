@@ -5,6 +5,6 @@
 
     <node pkg="map_server" type="map_server" name="map_server"  args="$(arg map_file)"/>
 
-    <node pkg="chibi20_2" type="localizer" name="localizer" output="screen"/>
+    <node pkg="chibi20_2" type="test_localizer" name="test_localizer" output="screen"/>
 
 </launch>

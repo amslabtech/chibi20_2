@@ -12,6 +12,7 @@
 #include <math.h>
 #include <random>
 #include <iostream>
+#include <vector>
 
 class Particle
 {
@@ -42,27 +43,27 @@ geometry_msgs::PoseArray poses;
 std::vector<Particle> particles;
 
 //パラメータ
-int N;                  //Particleの数
-double INIT_X;          //初期位置x
-double INIT_Y;          //初期位置y
-double INIT_YAW;        //初期位置yaw
-double INIT_X_COV;
-double INIT_Y_COV;
-double INIT_YAW_COV;
-double MAX_RANGE;
-int RANGE_STEP;         //尤度step
-double X_TH;            //xのしきい値
-double Y_TH;            //yのしきい値
-double YAW_TH;          //yawのしきい値
-double P_COV;
-double ALPHA_1;         //moveに用いる
-double ALPHA_2;
-double ALPHA_3;
-double ALPHA_4;
-double ALPHA_SLOW;
-double ALPHA_FAST;
+int N = 1000;               //Particleの数
+double INIT_X = 0.0;        //初期位置x
+double INIT_Y = 0.0;        //初期位置y
+double INIT_YAW = 0.0;      //初期位置yaw
+double INIT_X_COV = 0.5;    //初期分散x
+double INIT_Y_COV = 0.5;    //初期分散y
+double INIT_YAW_COV = 0.5;  //初期分散yaw
+double MAX_RANGE = 20;
+int RANGE_STEP = 3;         //尤度step
+double X_TH = 0.1;          //xのしきい値
+double Y_TH = 0.1;          //yのしきい値
+double YAW_TH = 0.1;        //yawのしきい値
+double P_COV = 0.3;
+double ALPHA_1 = 0.3;       //movenoise
+double ALPHA_2 = 0.3;
+double ALPHA_3 = 0.3;
+double ALPHA_4 = 0.3;
+double ALPHA_SLOW = 0.01;
+double ALPHA_FAST = 0.1;
 
-int max_index;
+int max_index = 0;
 double x_cov   = 0.5;
 double y_cov   = 0.5;
 double yaw_cov = 0.5;
@@ -423,6 +424,7 @@ int main(int argc,char **argv)
     ros::Publisher lmc_sub = nh.advertise<geometry_msgs::Pose2D>("/chibi20/pose",100);
     ros::Publisher gpp_sub = nh.advertise<geometry_msgs::Pose2D>("/poses",100);
 
+    /*
     //parameter取得
     private_nh.getParam("N",N);
     private_nh.getParam("INIT_X",INIT_X);
@@ -442,6 +444,7 @@ int main(int argc,char **argv)
     private_nh.getParam("ALPHA_4",ALPHA_4);
     private_nh.getParam("ALPHA_SLOW",ALPHA_SLOW);
     private_nh.getParam("ALPHA_FAST",ALPHA_FAST);
+    */
 
     tf::TransformBroadcaster broadcaster;
     tf::TransformListener listener;
@@ -504,11 +507,11 @@ int main(int argc,char **argv)
                     particles[i].p_measurement_update();
                     weight_sum += particles[i].weight;
                 }
+                weight_average = weight_sum / (double)N;
                 for(int i = 0; i < N; i++){
-                    weight_average = weight_sum / (double)N;
                     particles[i].weight /= weight_sum;
-                        if(particles[i].weight > particles[max_index].weight){
-                            max_index = i;
+                    if(particles[i].weight > particles[max_index].weight){
+                        max_index = i;
                         }
                 }
 
@@ -517,14 +520,14 @@ int main(int argc,char **argv)
                     weight_slow = weight_fast = weight_average;
                 }
 
-                if(weight_slow == 0){
+                if(weight_slow == 0.0){
                     weight_slow = weight_average;
                 }
                 else{
                     weight_slow += ALPHA_SLOW*(weight_average - weight_slow);
                 }
 
-                if(weight_fast == 0){
+                if(weight_fast == 0.0){
                     weight_fast = weight_average;
                 }
                 else{
@@ -569,38 +572,38 @@ int main(int argc,char **argv)
         }
 
 
-        //尤度が一番大きいparticleを算出
-        estimated_pose.pose = particles[max_index].pose.pose;
+            //尤度が一番大きいparticleを算出
+            estimated_pose.pose = particles[max_index].pose.pose;
 
-        //estimated_poseをestimated_pose2dへ
-        geometry_msgs::Pose2D estimated_pose2d;
-        estimated_pose2d.x     = estimated_pose.pose.position.x;
-        estimated_pose2d.y     = estimated_pose.pose.position.y;
-        estimated_pose2d.theta = get_Yaw(estimated_pose.pose.orientation);
+            //estimated_poseをestimated_pose2dへ
+            geometry_msgs::Pose2D estimated_pose2d;
+            estimated_pose2d.x     = estimated_pose.pose.position.x;
+            estimated_pose2d.y     = estimated_pose.pose.position.y;
+            estimated_pose2d.theta = get_Yaw(estimated_pose.pose.orientation);
 
-        std::cout << "estimated_pose.x  : " << estimated_pose2d.x << std::endl;
-        std::cout << "estimated_pose.y  : " << estimated_pose2d.y << std::endl;
-        std::cout << "estimated_pose.yaw: " << estimated_pose2d.theta << std::endl;
+            std::cout << "estimated_pose.x  : " << estimated_pose2d.x << std::endl;
+            std::cout << "estimated_pose.y  : " << estimated_pose2d.y << std::endl;
+            std::cout << "estimated_pose.yaw: " << estimated_pose2d.theta << std::endl;
 
-        lmc_sub.publish(estimated_pose2d);
-        gpp_sub.publish(estimated_pose2d);
+            lmc_sub.publish(estimated_pose2d);
+            gpp_sub.publish(estimated_pose2d);
 
 
-        try{
-            tf::StampedTransform map_transform;
-            map_transform.setOrigin(tf::Vector3(estimated_pose.pose.position.x,estimated_pose.pose.position.y,0.0));
-            map_transform.setRotation(tf::Quaternion(0,0,get_Yaw(estimated_pose.pose.orientation),1));
-            tf::Stamped<tf::Pose> tf_stamped(map_transform.inverse(),laser.header.stamp,"base_link");
-            tf::Stamped<tf::Pose> odom_to_map;
-            listener.transformPose("odom",tf_stamped,odom_to_map);
-            tf::Transform latest_tf = tf::Transform(tf::Quaternion(odom_to_map.getRotation()),tf::Point(odom_to_map.getOrigin()));
-            temp_tf_stamped = tf::StampedTransform(latest_tf.inverse(),laser.header.stamp,"map","odom");
-            broadcaster.sendTransform(temp_tf_stamped);
-        }
-        catch(tf::TransformException ex){
-            ROS_ERROR("ERROR!");
-            ROS_ERROR("%s", ex.what());
-        }
+            try{
+                tf::StampedTransform map_transform;
+                map_transform.setOrigin(tf::Vector3(estimated_pose.pose.position.x,estimated_pose.pose.position.y,0.0));
+                map_transform.setRotation(tf::Quaternion(0,0,get_Yaw(estimated_pose.pose.orientation),1));
+                tf::Stamped<tf::Pose> tf_stamped(map_transform.inverse(),laser.header.stamp,"base_link");
+                tf::Stamped<tf::Pose> odom_to_map;
+                listener.transformPose("odom",tf_stamped,odom_to_map);
+                tf::Transform latest_tf = tf::Transform(tf::Quaternion(odom_to_map.getRotation()),tf::Point(odom_to_map.getOrigin()));
+                temp_tf_stamped = tf::StampedTransform(latest_tf.inverse(),laser.header.stamp,"map","odom");
+                broadcaster.sendTransform(temp_tf_stamped);
+            }
+            catch(tf::TransformException ex){
+                ROS_ERROR("ERROR!");
+                ROS_ERROR("%s", ex.what());
+            }
         ros::spinOnce();
         rate.sleep();
 
