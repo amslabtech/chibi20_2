@@ -2,6 +2,22 @@
 
 //parameter
 
+double max_speed;
+double min_speed;
+double max_yawrate;
+double max_accel;
+double max_dyawrate;
+double v_reso;
+double yawrate_reso;
+double dt;
+double predict_time;
+double to_goal_cost_gain;
+double dist_gain;
+double speed_cost_gain;
+double obstacle_cost_gain;
+double robot_radius;
+double roomba_v_gain;
+double roomba_omega_gain;
 bool white_line_detector = false;
 bool dist = false;
 
@@ -67,7 +83,7 @@ void DWA::motion(State& roomba, Speed u) //method
     roomba.omega = u.omega;
 }
 
-void DWA::dynamic_window(Dynamic_Window& dw, State& roomba) //method
+void DWA::calc_dynamic_window(Dynamic_Window& dw, State& roomba) //method
 {
     Dynamic_Window Vs = {min_speed,
                                     max_speed,
@@ -88,7 +104,7 @@ void DWA::dynamic_window(Dynamic_Window& dw, State& roomba) //method
 return;
 }
 
-void DWA::trajectory(std::vector<State>& traj, State roomba, double i, double j)  //method
+void DWA::calc_trajectory(std::vector<State>& traj, State roomba, double i, double j)  //method
 {
     State roomba_traj = {0.0, 0.0, 0.0, 0.0, 0.0};
     Speed u = {i,j};
@@ -112,7 +128,7 @@ void DWA::trajectory(std::vector<State>& traj, State roomba, double i, double j)
 
 }
 
-double DWA::to_goal_cost(std::vector<State>& traj, Goal goal, State roomba) //method
+double DWA::calc_to_goal_cost(std::vector<State>& traj, Goal goal, State roomba) //method
 {
     // calculation for inner product
 
@@ -142,7 +158,7 @@ double DWA::to_goal_cost(std::vector<State>& traj, Goal goal, State roomba) //me
     return to_goal_cost_gain * error_angle;
 }
 
-double DWA::goal_dist(std::vector<State>& traj, Goal goal)
+double DWA::calc_goal_dist(std::vector<State>& traj, Goal goal)
 {
     double x = goal.x - traj.back().x;
     double y = goal.y - traj.back().y;
@@ -151,14 +167,14 @@ double DWA::goal_dist(std::vector<State>& traj, Goal goal)
     return dist;
 }
 
-double DWA::speed_cost(std::vector<State> traj)
+double DWA::calc_speed_cost(std::vector<State> traj)
 {
     double error_speed = max_speed - traj.back().v;
 
     return speed_cost_gain * error_speed;
 }
 
-double DWA::obstacle_cost(State roomba, std::vector<State> traj)
+double DWA::calc_obstacle_cost(State roomba, std::vector<State> traj)
 {
     int skip_k = 2;
     int skip_l = 10;
@@ -178,7 +194,7 @@ double DWA::obstacle_cost(State roomba, std::vector<State> traj)
     double y_obstacle;
     double yy_obstacle;
 
-    for(int k = 0; k < traj.size(); k += skip_k) {
+    for(unsigned int k = 0; k < traj.size(); k += skip_k) {
         x_traj = traj[k].x;
         y_traj = traj[k].y;
 
@@ -223,7 +239,7 @@ double DWA::obstacle_cost(State roomba, std::vector<State> traj)
     return 1 / min_r;
 }
 
-void DWA::final_input(State roomba, Speed& u, Dynamic_Window& dw, Goal goal) //method
+void DWA::calc_final_input(State roomba, Speed& u, Dynamic_Window& dw, Goal goal) //method
 {
     double min_cost = 100000000.0;
     Speed min_u = u;
@@ -334,7 +350,7 @@ int main(int argc, char **argv)
     // {x, y, yaw,v, omega}
     Speed u = {0.0, 0.0};
     Dynamic_Window dw = {0.0, 0.0, 0.0, 0.0};
-    double yaw = 0.0;
+   // double yaw = 0.0; //temporarily removed
 
     while(ros::ok())
     {
