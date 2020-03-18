@@ -25,39 +25,23 @@ const int N = 720; //(_msg.angle_max - msg.angle_max) / _msg.angle_increment
 
 bool turn = false; //false = Right, true = Left
 
-// struct State{
-//     double x;
-//     double y;
-//     double yaw;
-//     double v;
-//     double omega;
-// };
-//
-// struct Speed{
-//    double v;
-//    double omega;
-// };
-//
-// struct Goal{
-//     double x;
-//     double y;
-// };
-//
-// struct LaserData{
-//     double angle;
-//     double range;
-// };
-//
-// struct Dynamic_Window{
-//     double min_v;
-//     double max_v;
-//     double min_omega;
-//     double max_omega;
-// };
-//
 LaserData Ldata[N];
 Goal goal = {0, 0};
 geometry_msgs::PoseWithCovarianceStamped est_pose_msg;
+
+void calc_dynamic_window(Dynamic_Window&,State&);
+
+void calc_final_input(State, Speed&, Dynamic_Window&, Goal);
+
+void estpose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr&);
+
+void targetpose_callback(const geometry_msgs::PointStamped::ConstPtr&);
+
+void whiteline_callback(const std_msgs::Bool);
+
+void lasercallback(const sensor_msgs::LaserScan::ConstPtr&);
+
+void dwa_control(State&, Speed&, Goal, Dynamic_Window);
 
 void DWA::estpose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg) //method
 {
@@ -299,7 +283,7 @@ void DWA::dwa_control(State& roomba, Speed& u, Goal goal, Dynamic_Window dw) //m
     calc_final_input(roomba, u, dw, goal);
 }
 
-void DWA::lasercallback(const sensor_msgs::LaserScan::ConstPtr& msg) //method
+void DWA::lasercallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
     sensor_msgs::LaserScan _msg = *msg;
 
@@ -337,8 +321,8 @@ int main(int argc, char **argv)
 
     ros::Publisher ctrl_pub = roomba_ctrl_pub.advertise<roomba_500driver_meiji::RoombaCtrl>("roomba/control", 1);
     ros::Subscriber laser_sub = scan_laser_sub.subscribe("scan", 1, lasercallback);
-    ros::Subscriber est_pose_sub = est_pose.subscribe("chibi20_2/estimated_pose", 1, estpose_callback); //look for chibi20_2/estimated_pose
-    ros::Subscriber target_pose_sub = target_pose.subscribe("chibi20_2/target", 1, targetpose_callback); //look for chibi20_2/target
+    ros::Subscriber est_pose_sub = est_pose.subscribe("chibi20_2/estimated_pose", 1, estpose_callback);
+    ros::Subscriber target_pose_sub = target_pose.subscribe("chibi20_2/target", 1, targetpose_callback);
     ros::Subscriber whiteline_sub = whiteline.subscribe("whiteline", 1, whiteline_callback);
     ros::Rate loop_rate(10);
 
