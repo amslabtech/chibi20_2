@@ -163,11 +163,8 @@ include
 add_dependencies(localizer ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_dependencies(DWA ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 # add_dependencies(global_path_planner  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-<<<<<<< HEAD
 #add_dependencies(global_path_tester  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-=======
 add_dependencies(global_path_tester  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
->>>>>>> 170b98589327de204c6be73da9f310df3b5975f2
 # add_dependencies(DWA ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(global_path_planner  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 # add_dependencies(global_path_tester  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -181,11 +178,8 @@ add_dependencies(roomba_controller  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin
 # target_link_libraries(global_path_planner   ${catkin_LIBRARIES} )
 #target_link_libraries(DWA ${catkin_LIBRARIES} )
 # target_link_libraries(global_path_planner   ${catkin_LIBRARIES} )
-<<<<<<< HEAD
 #target_link_libraries(global_path_tester   ${catkin_LIBRARIES} )
-=======
 target_link_libraries(global_path_tester   ${catkin_LIBRARIES} )
->>>>>>> 170b98589327de204c6be73da9f310df3b5975f2
 # target_link_libraries(localizer ${catkin_LIBRARIES} )
 #target_link_libraries(amcl ${catkin_LIBRARIES} )
 # target_link_libraries(global_path_planner   ${catkin_LIBRARIES} )
