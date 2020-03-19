@@ -57,14 +57,14 @@ private:
     void motion(State&,Speed);
     void trajectory(std::vector<State>&,State,double,double);
     double to_goal_cost(std::vector<State>&,Goal,State);
-    double goal_dist(std::vector<State>,Goal);
+    double calc_goal_dist(std::vector<State>&, Goal);
     double speed_cost(std::vector<State>);
     double obsatcle_cost(State,std::vector<State>);
     void final_input(State,Speed&,Dynamic_Window&,Goal);
     void dwa_control(State&,Speed&,Goal,Dynamic_Window);
     void calc_dynamic_window(Dynamic_Window&,State&);
     void calc_trajectory(std::vector<State>&, State, double, double);
-    double calc_to_goal_cost(std::vector<State>&, Goal, State)
+    double calc_to_goal_cost(std::vector<State>&, Goal, State);
     double calc_speed_cost(std::vector<State>);
     double calc_obstacle_cost(State, std::vector<State>);
     void calc_final_input(State, Speed&, Dynamic_Window&, Goal);
