@@ -2,7 +2,7 @@
 
 A_Star_Planner::A_Star_Planner() :private_n("~")
 {
-    //parameter
+    //parameter nh推奨 pパラメータ化しなくていい
     private_n.param("row",row,{1000});
     private_n.param("column",column,{1000});
     private_n.param("scale",scale,{20});
@@ -44,7 +44,7 @@ void A_Star_Planner::map_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
     {
         for(int j=0;j<row;j++)
         {
-            grid_map[j][i]=prior_map.data[i*column+j];
+            grid_map[j][i]=prior_map.data[i*column+j];//
         }
     }
     adjust.x=row/2;
@@ -130,6 +130,7 @@ void A_Star_Planner::define_goal_grid()
     //１周するには何回かゴールを更新して１つのパスを作る必要がある。
     //全体的なスタートとゴールが一緒なためそのままやるとパスを引けない
     //ゴール設定方法を検討中
+    //ここでやらない方がいい
     open_list[searching_grid.x][searching_grid.y].f=huristic(searching_grid.x,searching_grid.y);
     open_list[searching_grid.x][searching_grid.y].g=0.0;
     open_list[searching_grid.x][searching_grid.y].dealer_x=searching_grid.x;
@@ -334,7 +335,7 @@ void A_Star_Planner::path_creator()
     clean_lists();
     define_starting_grid();
     define_goal_grid();
-        std::cout<<"goal_grid"<<goal_grid.x<<","<<goal_grid.y<<std::endl;
+    std::cout<<"goal_grid"<<goal_grid.x<<","<<goal_grid.y<<std::endl;
     while(!reached_goal)
     {
         //###use test only

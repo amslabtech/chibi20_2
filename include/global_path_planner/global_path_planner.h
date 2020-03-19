@@ -94,7 +94,7 @@ private:
     //for debagging
     ros::Publisher pub_open_grid;
 
-    //
+    //map manager に移す
     ros::Publisher pub_updated_map;
     void map_turn();
 
