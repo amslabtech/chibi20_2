@@ -45,25 +45,16 @@ struct Dynamic_Window{
 class DWA
 {
 public:
-    // real_velocity();
-<<<<<<< HEAD
-    // DWA();
-
-=======
     DWA();
-    // void estpose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr&);
-    // void targetpose_callback(const geometry_msgs::PointStamped::ConstPtr&);
-    // void whiteline_callback(const std_msgs::Bool);
-    // void lasercallback(const sensor_msgs::LaserScan::ConstPtr&);
->>>>>>> f09ea93f47c662246e2e822aec4974ce6b2ae462
-private:
-    //method
+
     void estpose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr&);
     void targetpose_callback(const geometry_msgs::PointStamped::ConstPtr&);
     void whiteline_callback(const std_msgs::Bool);
+    void lasercallback(const sensor_msgs::LaserScan::ConstPtr&);
+
+private:
+    //method
     void motion(State&,Speed);
-<<<<<<< HEAD
-    void dynamic_window(Dynamic_Window&,State&)
     void trajectory(std::vector<State>&,State,double,double);
     double to_goal_cost(std::vector<State>&,Goal,State);
     double goal_dist(std::vector<State>,Goal);
@@ -71,17 +62,12 @@ private:
     double obsatcle_cost(State,std::vector<State>);
     void final_input(State,Speed&,Dynamic_Window&,Goal);
     void dwa_control(State&,Speed&,Goal,Dynamic_Window);
-=======
     void calc_dynamic_window(Dynamic_Window&,State&);
     void calc_trajectory(std::vector<State>&, State, double, double);
-    double calc_to_goal_cost(std::vector<State>&, Goal, State);
-    double calc_goal_dist(std::vector<State>&, Goal);
+    double calc_to_goal_cost(std::vector<State>&, Goal, State)
     double calc_speed_cost(std::vector<State>);
     double calc_obstacle_cost(State, std::vector<State>);
     void calc_final_input(State, Speed&, Dynamic_Window&, Goal);
-    void dwa_control(State&, Speed&, Goal, Dynamic_Window);
->>>>>>> f09ea93f47c662246e2e822aec4974ce6b2ae462
-    void lasercallback(const sensor_msgs::LaserScan::ConstPtr&);
 
     //parameter
     double max_speed;
@@ -100,11 +86,6 @@ private:
     double robot_radius;
     double roomba_v_gain;
     double roomba_omega_gain;
-    bool white_line_detector=false;
-    bool dist=false;
-    const int N=720;//(_msg.angle_max-msg.angle_max)/_msg.angle_increment
-    bool turn=false;//f=Right,L=Left
-    Goal goal;
 
     //member
     ros::NodeHandle roomba_ctrl_pub;

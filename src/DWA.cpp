@@ -19,71 +19,15 @@ double robot_radius;
 double roomba_v_gain;
 double roomba_omega_gain;
 bool white_line_detector = false;
-<<<<<<< HEAD
-// bool dist = false;
-//
-// const int N = 720; //(_msg.angle_max - msg.angle_max) / _msg.angle_increment
-//
-// bool turn = false; //false = Right, true = Left
-//
-// struct State{
-//     double x;
-//     double y;
-//     double yaw;
-//     double v;
-//     double omega;
-// };
-//
-// struct Speed{
-//    double v;
-//    double omega;
-// };
-//
-// struct Goal{
-//     double x;
-//     double y;
-// };
-//
-// struct LaserData{
-//     double angle;
-//     double range;
-// };
-//
-// struct Dynamic_Window{
-//     double min_v;
-//     double max_v;
-//     double min_omega;
-//     double max_omega;
-// };
-//
-=======
 bool dist = false;
 
 const int N = 720; //(_msg.angle_max - msg.angle_max) / _msg.angle_increment
 
 bool turn = false; //false = Right, true = Left
 
->>>>>>> f09ea93f47c662246e2e822aec4974ce6b2ae462
 LaserData Ldata[N];
 Goal goal = {0, 0};
 geometry_msgs::PoseWithCovarianceStamped est_pose_msg;
-
-<<<<<<< HEAD
-=======
-void calc_dynamic_window(Dynamic_Window&,State&);
-
-void calc_final_input(State, Speed&, Dynamic_Window&, Goal);
-
-void estpose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr&);
-
-void targetpose_callback(const geometry_msgs::PointStamped::ConstPtr&);
-
-void whiteline_callback(const std_msgs::Bool);
-
-void lasercallback(const sensor_msgs::LaserScan::ConstPtr&);
-
-void dwa_control(State&, Speed&, Goal, Dynamic_Window);
->>>>>>> f09ea93f47c662246e2e822aec4974ce6b2ae462
 
 void DWA::estpose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg) //method
 {
