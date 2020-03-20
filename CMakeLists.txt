@@ -140,15 +140,12 @@ include
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 #  add_executable(laser src/laser.cpp)
-<<<<<<< HEAD
 add_executable(roomba_controller src/roomba_controller.cpp)
  # add_executable(DWA src/DWA.cpp)
 #  add_executable(roomba_controller src/roomba_controller.cpp)
 add_executable(DWA src/DWA.cpp)
-=======
  add_executable(roomba_controller src/roomba_controller.cpp)
  add_executable(DWA src/DWA.cpp)
->>>>>>> 66cbe614abdb5fef1d575de07c2a344e335d6fe3
 #  add_executable(move src/move.cpp)
 add_executable(global_path_planner src/global_path_planner.cpp)
 #  add_executable(global_path_tester src/global_path_tester.cpp)
@@ -167,7 +164,7 @@ add_executable(global_path_planner src/global_path_planner.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 
-<<<<<<< HEAD
+
 #add_dependencies(test_amcl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_dependencies(test_localizer ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(localizer ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -178,14 +175,12 @@ add_dependencies(global_path_planner  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catk
 add_dependencies(DWA ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_dependencies(global_path_planner  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 # add_dependencies(global_path_tester  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-=======
 #add_dependencies(amcl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_dependencies(test_localizer ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(localizer ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(DWA ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(global_path_planner  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_dependencies(global_path_tester  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
->>>>>>> 66cbe614abdb5fef1d575de07c2a344e335d6fe3
 add_dependencies(roomba_controller  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #  add_dependencies(laser  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 # add_dependencies(move  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -194,7 +189,6 @@ add_dependencies(roomba_controller  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin
  target_link_libraries(localizer ${catkin_LIBRARIES} )
  # target_link_libraries(test_amcl ${catkin_LIBRARIES})
  #target_link_libraries(test_localizer ${catkin_LIBRARIES} )
-<<<<<<< HEAD
 # target_link_libraries(global_path_planner   ${catkin_LIBRARIES} )
 #target_link_libraries(DWA ${catkin_LIBRARIES} )
  target_link_libraries(global_path_planner   ${catkin_LIBRARIES} )
@@ -204,11 +198,9 @@ add_dependencies(roomba_controller  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin
 # target_link_libraries(global_path_planner   ${catkin_LIBRARIES} )
 target_link_libraries(DWA ${catkin_LIBRARIES} )
 #target_link_libraries(global_path_planner   ${catkin_LIBRARIES} )
-=======
 #target_link_libraries(amcl ${catkin_LIBRARIES} )
 target_link_libraries(DWA ${catkin_LIBRARIES} )
 target_link_libraries(global_path_planner   ${catkin_LIBRARIES} )
->>>>>>> 66cbe614abdb5fef1d575de07c2a344e335d6fe3
 # target_link_libraries(global_path_tester   ${catkin_LIBRARIES} )
 target_link_libraries(roomba_controller   ${catkin_LIBRARIES} )
 #  target_link_libraries(laser   ${catkin_LIBRARIES} )
