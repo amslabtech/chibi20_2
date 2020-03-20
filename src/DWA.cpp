@@ -1,6 +1,6 @@
 #include "DWA.h"
 
-const int N = 720; //(_msg.angle_max - msg.angle_max) / _msg.angle_increment
+const int N = 720;
 LaserData Ldata[N];
 // Goal goal = {0, 0};
 
@@ -82,6 +82,7 @@ return;
 void DWA::calc_trajectory(std::vector<State>& traj, State roomba, double i, double j)  //method
 {
     State roomba_traj = {0.0, 0.0, 0.0, 0.0, 0.0};
+                       // {x, y, yaw,v, omega}
     Speed u = {i,j};
     traj.clear();
     double roomba_traj_u = 0.0;

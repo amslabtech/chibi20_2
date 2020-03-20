@@ -93,7 +93,7 @@ private:
     Speed u = {0.0, 0.0};
     Dynamic_Window dw = {0.0, 0.0, 0.0, 0.0};
    // double yaw = 0.0; //temporarily removed
-    bool turn = false; //false = Right, true = Left
+    // bool turn = false; //false = Right, true = Left
     Goal goal = {0, 0};
 
     //member
