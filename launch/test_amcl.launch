@@ -5,6 +5,8 @@
 
     <node pkg="map_server" type="map_server" name="map_server"  args="$(arg map_file)"/>
 
-    <node pkg="chibi20_2" type="test_localizer" name="test_localizer" output="screen"/>
+    <node pkg="chibi20_2" type="test_amcl" name="test_amcl" output="screen" >
+        <rosparam file="$(find chibi20_2)/config/param/localizer.yaml" command="load" />
+    </node>
 
 </launch>

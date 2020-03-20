@@ -14,6 +14,7 @@
 
 #include <random>
 #include <math.h>
+#include <vector>
 
 class Particle
 {
@@ -61,6 +62,22 @@ private:
     double MOVE_YAW_COV;
     double ALPHA_SLOW;
     double ALPHA_FAST;
+
+    int max_index = 0;
+    double x_cov = 0.5;
+    double y_cov = 0.5;
+    double yaw_cov = 0.5;
+    double distance_sum = 0.0;
+    double angle_sum = 0.0;
+    double weight_sum = 0.0;
+    double weight_average;
+    double weight_slow = 0.0;
+    double weight_fast = 0.0;
+
+    bool get_map = false;       //mapを取得したかどうかの判定
+    bool update_flag = false;   //更新するかどうかの判定
+
+    std::vector<Particle> particles;
 
     //member
     ros::NodeHandle nh;
