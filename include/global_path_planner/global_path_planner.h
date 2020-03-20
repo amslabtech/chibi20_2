@@ -72,7 +72,8 @@ private:
     Coordinate searching_grid;
     Coordinate downlimit;
     Coordinate uplimit;
-    const Coordinate landmark[10]={{3000,2700},{2840,2730},{2920,3030},{3100,3020},{3200,3000},{3110,2670},{3030,2340},{2880,2370},{2760,2410},{2840,2730}};//中央、中央左から時計回り
+    const Coordinate landmark[10]={{2000,2000},{1860,2000},{1860,2340},{2000,2340},{2140,2340},{2140,2000},{2140,1680},{2000,1680},{1860,1680},{1860,2000}};//中央、中央左から時計回り{{0,0},{-140,0},{-140,340},{0,340},{140,340},{140,0},{140,-320},{0,-320},{-140,-320},{-140,0}}
+    // const Coordinate landmark[10]={{2000,2000},{1845,2000},{1860,2340},{2000,2170},{2140,2340},{2070,2000},{2140,1680},{2000,1650},{1860,1680},{1845,2000}};
     Coordinate tracing_grid;
     std::vector<std::vector<Costs>>open_list;//Costs open_list[row][column];
     std::vector<std::vector<Costs>>close_list;//Costs close_list[row][column];
@@ -93,7 +94,9 @@ private:
     //for debagging
     ros::Publisher pub_open_grid;
 
-    //
+    //map manager に移す
+    ros::Publisher pub_updated_map;
+    void map_turn();
 
 
 };

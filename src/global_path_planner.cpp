@@ -2,7 +2,7 @@
 
 A_Star_Planner::A_Star_Planner() :private_n("~")
 {
-    //parameter
+    //parameter nh推奨 pパラメータ化しなくていい
     private_n.param("row",row,{1000});
     private_n.param("column",column,{1000});
     private_n.param("scale",scale,{20});
@@ -23,6 +23,7 @@ A_Star_Planner::A_Star_Planner() :private_n("~")
     // //publisher
     pub_path=n.advertise<nav_msgs::Path>("global_path",1);
     pub_open_grid=n.advertise<geometry_msgs::PointStamped>("searching_grid",1);//探索中のグリッドをrvizに配信するためのだからシステム的に使うことはないと思う
+    pub_updated_map=n.advertise<nav_msgs::OccupancyGrid>("updated_map",1);
 
 
 }
@@ -43,7 +44,7 @@ void A_Star_Planner::map_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
     {
         for(int j=0;j<row;j++)
         {
-            grid_map[j][i]=prior_map.data[i*column+j];
+            grid_map[j][i]=prior_map.data[i*column+j];//
         }
     }
     adjust.x=row/2;
@@ -129,6 +130,7 @@ void A_Star_Planner::define_goal_grid()
     //１周するには何回かゴールを更新して１つのパスを作る必要がある。
     //全体的なスタートとゴールが一緒なためそのままやるとパスを引けない
     //ゴール設定方法を検討中
+    //ここでやらない方がいい
     open_list[searching_grid.x][searching_grid.y].f=huristic(searching_grid.x,searching_grid.y);
     open_list[searching_grid.x][searching_grid.y].g=0.0;
     open_list[searching_grid.x][searching_grid.y].dealer_x=searching_grid.x;
@@ -333,7 +335,7 @@ void A_Star_Planner::path_creator()
     clean_lists();
     define_starting_grid();
     define_goal_grid();
-        std::cout<<"goal_grid"<<goal_grid.x<<","<<goal_grid.y<<std::endl;
+    std::cout<<"goal_grid"<<goal_grid.x<<","<<goal_grid.y<<std::endl;
     while(!reached_goal)
     {
         //###use test only
@@ -360,6 +362,7 @@ void A_Star_Planner::process()
     {
         if(map_received)
         {
+            map_turn();
             make_limit();
             for(checkpoint=1;checkpoint<9;checkpoint++)
             {
@@ -382,6 +385,68 @@ void A_Star_Planner::process()
            map_received=false;
            ros::spinOnce();
            loop_rate.sleep();
+    }
+}
+
+void A_Star_Planner::map_turn()
+{
+    std::vector<std::vector<int>> turned_map;
+    turned_map.resize(row,std::vector<int>(column,-1));
+    Coordinate move_length;
+    move_length.x=975;
+    move_length.y=690;
+    for(int i=0;i<row;i++)
+    {
+        for(int j=0;j<column;j++)
+        {
+            if(grid_map[i][j]!=-1)
+            {
+                 turned_map[i-move_length.x][j-move_length.y]=grid_map[i][j];
+            }
+        }
+    }
+    nav_msgs::OccupancyGrid updated_map;
+    updated_map.info=prior_map.info;
+    for(int i=0;i<column;i++)
+    {
+        for(int j=0;j<row;j++)
+        {
+            updated_map.data.push_back(turned_map[j][i]);
+        }
+    }
+    pub_updated_map.publish(updated_map);
+
+    std::vector<std::vector<int>> rotation_map;
+    rotation_map.resize(row,std::vector<int>(column,-1));
+    double theta;
+    theta=-15*M_PI/180;
+    for(int i=0;i<row;i++)
+    {
+        for(int j=0;j<column;j++)
+        {
+            if(((int)((i-adjust.x)*cos(theta)-(j-adjust.y)*sin(theta)+adjust.x))>=0&&((int)((i-adjust.x)*sin(theta)+(j-adjust.y)*cos(theta)+adjust.y))>=0&&((int)((i-adjust.x)*cos(theta)-(j-adjust.y)*sin(theta)+adjust.x))<row&&((int)((i-adjust.x)*sin(theta)+(j-adjust.y)*cos(theta)+adjust.y))<column)
+            {
+                // std::cout<<(int)((i-adjust.x)*cos(theta)-(j-adjust.y)*sin(theta)+adjust.x)<<","<<(int)((i-adjust.x)*sin(theta)+(j-adjust.y)*cos(theta)+adjust.y)<<std::endl;
+                rotation_map[i][j]=turned_map[(int)((i-adjust.x)*cos(theta)-(j-adjust.y)*sin(theta)+adjust.x)][(int)((i-adjust.x)*sin(theta)+(j-adjust.y)*cos(theta)+adjust.y)];
+            }
+        }
+    }
+    nav_msgs::OccupancyGrid neet_map;
+    neet_map.info=prior_map.info;
+    for(int i=0;i<column;i++)
+    {
+        for(int j=0;j<row;j++)
+        {
+            neet_map.data.push_back(rotation_map[j][i]);
+        }
+    }
+    pub_updated_map.publish(neet_map);
+    for(int i=0;i<row;i++)
+    {
+        for(int j=0;j<column;j++)
+        {
+            grid_map[i][j]=rotation_map[i][j];
+        }
     }
 }
 

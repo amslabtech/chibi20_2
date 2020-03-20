@@ -11,7 +11,7 @@
 	    <param name="serial_port" value="/dev/ttyACM0"/>
 	    <param name="frame_id" value="laser"/>
 	    <param name="publish_intensity" value="true"/>
-        <param name="publish_multiecho" value="faulse"/>
+        <param name="publish_multiecho" value="false"/>
     </node>
 
     <node pkg="chibi20_2" name="chibi20_2" type="roomba_controller" output="screen">
