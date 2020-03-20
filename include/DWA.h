@@ -46,12 +46,12 @@ class DWA
 {
 public:
     DWA();
-
     void estpose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr&);
     void targetpose_callback(const geometry_msgs::PointStamped::ConstPtr&);
     void whiteline_callback(const std_msgs::Bool);
     void lasercallback(const sensor_msgs::LaserScan::ConstPtr&);
-
+    void dwa_control(State&,Speed&,Goal,Dynamic_Window);
+    void process();
 private:
     //method
     void motion(State&,Speed);
@@ -61,7 +61,6 @@ private:
     double speed_cost(std::vector<State>);
     double obsatcle_cost(State,std::vector<State>);
     void final_input(State,Speed&,Dynamic_Window&,Goal);
-    void dwa_control(State&,Speed&,Goal,Dynamic_Window);
     void calc_dynamic_window(Dynamic_Window&,State&);
     void calc_trajectory(std::vector<State>&, State, double, double);
     double calc_to_goal_cost(std::vector<State>&, Goal, State);
@@ -105,6 +104,7 @@ private:
 
   //ros::Rate loop_rate();
 
+    roomba_500driver_meiji::RoombaCtrl;
     geometry_msgs::PoseWithCovarianceStamped est_pose_msg;
 
 };
