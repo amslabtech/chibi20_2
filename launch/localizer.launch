@@ -2,8 +2,8 @@
 <launch>
 
     <arg name="map_file" default="$(find chibi20_2)/mapdata/chibi20_2_dkan7.yaml"/>
-    <arg name="use_map_topic" default="ture" />
-    <arg name="scan_topic" default="scan" />
+    <!--<arg name="use_map_topic" default="ture" />
+    <arg name="scan_topic" default="scan" /> -->
 
     <node pkg="map_server" type="map_server" name="map_server"  args="$(arg map_file)" />
 
