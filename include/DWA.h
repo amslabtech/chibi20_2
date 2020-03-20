@@ -85,14 +85,19 @@ private:
     double robot_radius;
     double roomba_v_gain;
     double roomba_omega_gain;
+    int hz;
+    bool white_line_detector;
+    bool dist;
+    State roomba ={0.0, 0.0, 0.0, 0.0, 0.0};
+    // {x, y, yaw,v, omega}
+    Speed u = {0.0, 0.0};
+    Dynamic_Window dw = {0.0, 0.0, 0.0, 0.0};
+   // double yaw = 0.0; //temporarily removed
+    bool turn = false; //false = Right, true = Left
+    Goal goal = {0, 0};
 
     //member
-    ros::NodeHandle roomba_ctrl_pub;
-    ros::NodeHandle roomba_odometry_sub;
-    ros::NodeHandle scan_laser_sub;
-    ros::NodeHandle est_pose;
-    ros::NodeHandle target_pose;
-    ros::NodeHandle whiteline;
+    ros::NodeHandle nh;
     ros::NodeHandle private_nh;
 
     ros::Subscriber laser_sub;
@@ -104,7 +109,7 @@ private:
 
   //ros::Rate loop_rate();
 
-    roomba_500driver_meiji::RoombaCtrl;
+    roomba_500driver_meiji::RoombaCtrl msg;
     geometry_msgs::PoseWithCovarianceStamped est_pose_msg;
 
 };
