@@ -10,18 +10,19 @@ class Grid_Map_Creator
 {
  public:
      Grid_Map_Creator();
+     void process();
 
  private:
     //method
     void point_cloud_callback(const sensor_msgs::LaserScan::ConstPtr&);
-    void pose_callback(const geometry_msgs::Pose2D::ConstPtr&);
-    void get_global_map();
-    void update_grid_map();//Local Mapの作成及び更新を行う
-    void compare_maps();
-    void update_global_map();
+    void make_grid_map();
 
 
     //parameter
+    std::vector<std::vector<int>> grid_map;
+    int row;
+    int column;
+
 
     //member
     sensor_msgs::LaserScan
