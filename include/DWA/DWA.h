@@ -20,6 +20,7 @@ struct State{
     double omega;
 };
 
+//軌跡を探索するときに(v, omega)の組み合わせを考えるのに使う
 struct Speed{
    double v;
    double omega;
@@ -86,11 +87,12 @@ private:
     double roomba_v_gain;
     double roomba_omega_gain;
     int hz;
-    // bool white_line_detector;
+    int N;
     // bool dist;
-    State roomba ={0.0, 0.0, 0.0, 0.0, 0.0};
+    LaserData Ldata[N];
+    State roomba;
     // {x, y, yaw,v, omega}
-    Speed u = {0.0, 0.0};
+    Speed speed;
     Dynamic_Window dw = {0.0, 0.0, 0.0, 0.0};
    // double yaw = 0.0; //temporarily removed
     // bool turn = false; //false = Right, true = Left

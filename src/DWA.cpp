@@ -1,12 +1,22 @@
 #include "DWA/DWA.h"
 
-const int N = 720;
-LaserData Ldata[N];
+// const int N = 720;
+// LaserData Ldata[N];
 // Goal goal = {0, 0};
 
 //初期化
 DWA::DWA() :private_nh("~")
 {
+    const int N = 720;
+                 // {x, y, yaw,v, omega}
+    State roomba ={0.0, 0.0, 0.0, 0.0, 0.0};
+
+                 // {v, omega}
+    Speed speed = {0.0, 0.0};
+
+                 //  {min_v, max_v, min_omega, max_omega}
+    Dynamic_Window dw = {0.0, 0.0, 0.0, 0.0};
+
     private_nh.param("max_speed", max_speed,{0.5});
     private_nh.param("min_speed", min_speed,{-0.5});
     private_nh.param("max_yawrate", max_yawrate,{0.5});
@@ -45,20 +55,15 @@ void DWA::targetpose_callback(const geometry_msgs::PointStamped::ConstPtr& msg) 
     goal.x = _msg.point.x;
     goal.y = _msg.point.y;
 }
-//白線を探知したかの情報を引数としてわたす
-//void DWA::whiteline_callback(const std_msgs::Bool msg) //method
-//{
-//    white_line_detector = msg.data;
-//}
 
 //ルンバの動きと状態, local mapと被る
-void DWA::motion(State& roomba, Speed u) //method
+void DWA::motion(State& roomba, Speed speed) //method
 {
-    roomba.yaw += u.omega * dt;
-    roomba.x += u.v * std::cos(roomba.yaw) * dt;
-    roomba.y += u.v * std::sin(roomba.yaw) * dt;
-    roomba.v = u.v;
-    roomba.omega = u.omega;
+    roomba.yaw += speed.omega * dt;
+    roomba.x += speed.v * std::cos(roomba.yaw) * dt;
+    roomba.y += speed.v * std::sin(roomba.yaw) * dt;
+    roomba.v = speed.v;
+    roomba.omega = speed.omega;
 }
 //ダイナミックウィンドウを作る
 void DWA::calc_dynamic_window(Dynamic_Window& dw, State& roomba) //method
@@ -81,38 +86,40 @@ void DWA::calc_dynamic_window(Dynamic_Window& dw, State& roomba) //method
 return;
 }
 
-//軌道を探索
+//軌道を探索 //i,j need revised to vector
 void DWA::calc_trajectory(std::vector<State>& traj, State roomba, double i, double j)
 {                      // {x,   y, yaw,   v, omega}
     State roomba_traj = {0.0, 0.0, 0.0, 0.0, 0.0};
-    Speed u = {i,j};
+    Speed speed = {i,j};
     traj.clear();
-    double roomba_traj_u = 0.0;
+    double roomba_traj_speed = 0.0;
     double roomba_traj_v = 0.0;
 
-
     for(double t = 0.0; t<= predict_time; t +=dt){
-        roomba_traj.yaw += u.omega * dt;
-        roomba_traj_u += u.v * std::cos(roomba_traj.yaw) * dt;
-        roomba_traj_v += u.v * std::sin(roomba_traj.yaw) * dt;
-        roomba_traj.x = roomba.x + (roomba_traj_u * std::cos(roomba.yaw)) - (roomba_traj_v * std::sin(roomba.yaw));
-        roomba_traj.y = roomba.y + (roomba_traj_u * std::sin(roomba.yaw)) - (roomba_traj_v * std::cos(roomba.yaw));
-        roomba_traj.v = u.v;
-        roomba_traj.omega = u.omega;
+        roomba_traj.yaw += speed.omega * dt;
+        roomba_traj_speed += speed.v * std::cos(roomba_traj.yaw) * dt;
+        roomba_traj_v += speed.v * std::sin(roomba_traj.yaw) * dt;
+        roomba_traj.x = roomba.x + (roomba_traj_speed * std::cos(roomba.yaw)) - (roomba_traj_v * std::sin(roomba.yaw));
+        roomba_traj.y = roomba.y + (roomba_traj_speed * std::sin(roomba.yaw)) - (roomba_traj_v * std::cos(roomba.yaw));
+        roomba_traj.v = speed.v;
+        roomba_traj.omega = speed.omega;
         traj.push_back(roomba_traj);
-
-
     }
-
 }
 
 //目的地にかけるコストを算出
 double DWA::calc_to_goal_cost(std::vector<State>& traj, Goal goal, State roomba)
 {
-
+    //ゴールと最終位置との距離
     double goal_length = std::sqrt(pow(goal.x - traj.back().x, 2) + pow(goal.y - traj.back().y, 2));
+
+    //最終位置とロボットとの距離
     double traj_length = std::sqrt(pow(traj.back().x, 2) + pow(traj.back().y, 2));
+
+    //内積の計算
     double dot_product = (goal.x - traj.back().x) * traj.back().x + (goal.y - traj.back().y) * traj.back().y;
+
+    //errorはcos(theta)の値
     double error = dot_product / (goal_length * traj_length);
 
     if(error < -0.8){
@@ -201,17 +208,18 @@ double DWA::calc_obstacle_cost(State roomba, std::vector<State> traj)
 
     return 1 / min_r;
 }
+
 //選出した速度, 加速度をロボットに代入
-void DWA::calc_final_input(State roomba, Speed& u, Dynamic_Window& dw, Goal goal)
+void DWA::calc_final_input(State roomba, Speed& speed, Dynamic_Window& dw, Goal goal)
 {
     double min_cost = 1e8;
-    Speed min_u = u;
-    min_u.v = 0.0;
+    Speed min_speed = speed;
+    min_speed.v = 0.0;
     std::vector<State> traj;
     double to_goal_cost = 0.0;
     double goal_dist = 0.0;
     double speed_cost = 0.0;
-    double ob_cost = 0.0;
+    double obstacle_cost = 0.0;
     double final_cost = 0.0;
     double center = (dw.max_omega + dw.min_omega) / 2;
 
@@ -219,43 +227,42 @@ void DWA::calc_final_input(State roomba, Speed& u, Dynamic_Window& dw, Goal goal
         for(double j = 0; (center + j) < dw.max_omega; j += yawrate_reso) {
             calc_trajectory(traj, roomba, i, center + j);
             to_goal_cost = calc_to_goal_cost(traj, goal, roomba);
+
+//mazical number, 3.0 needs altering to gain;
             goal_dist = 3.0 * calc_goal_dist(traj, goal);
-
-            ob_cost = calc_obstacle_cost(roomba, traj);
-
-
-            final_cost = to_goal_cost + goal_dist + speed_cost + ob_cost;
+            obstacle_cost = calc_obstacle_cost(roomba, traj);
+            final_cost = to_goal_cost + goal_dist + speed_cost + obstacle_cost;
 
             if(min_cost >= final_cost) {
                 min_cost = final_cost;
-                min_u.v = i;
-                min_u.omega = center + j;
+                min_speed.v = i;
+                min_speed.omega = center + j;
             }
 
             calc_trajectory(traj, roomba, i, center - j);
             to_goal_cost = calc_to_goal_cost(traj, goal, roomba);
             goal_dist = 3.0 * calc_goal_dist(traj, goal);
 
-            ob_cost = calc_obstacle_cost(roomba, traj);
+            obstacle_cost = calc_obstacle_cost(roomba, traj);
 
 
-            final_cost = to_goal_cost + goal_dist + speed_cost + ob_cost;
+            final_cost = to_goal_cost + goal_dist + speed_cost + obstacle_cost;
 
             if(min_cost >= final_cost) {
                 min_cost = final_cost;
-                min_u.v = i;
-                min_u.omega = center - j;
+                min_speed.v = i;
+                min_speed.omega = center - j;
             }
         }
     }
-    u = min_u;
+    speed = min_speed;
 }
 //DWAの実行
-void DWA::dwa_control(State& roomba, Speed& u, Goal goal, Dynamic_Window dw)
+void DWA::dwa_control(State& roomba, Speed& speed, Goal goal, Dynamic_Window dw)
 {
     calc_dynamic_window(dw, roomba);
 
-    calc_final_input(roomba, u, dw, goal);
+    calc_final_input(roomba, speed, dw, goal);
 }
 //センサからの情報を引数としてわたす
 void DWA::lasercallback(const sensor_msgs::LaserScan::ConstPtr& msg)
@@ -275,48 +282,20 @@ void DWA::process()
     {
     ros::spinOnce();
 
-    //motion(roomba, u);
+    //motion(roomba, speed);
     roomba.yaw = tf::getYaw(estimated_pose_msg.pose.pose.orientation);
-    roomba.v = u.v;
-    roomba.omega = u.omega;
+    roomba.v = speed.v;
+    roomba.omega = speed.omega;
     roomba.x = estimated_pose_msg.pose.pose.position.x;
     roomba.y = estimated_pose_msg.pose.pose.position.y;
 
-    dwa_control(roomba, u, goal, dw);
+    dwa_control(roomba, speed, goal, dw);
+
     //ゴールの方に向いているか
-    msg.cntl.linear.x = roomba_v_gain * u.v / max_speed;
-    msg.cntl.angular.z = roomba_omega_gain * u.v / max_yawrate;
-//    if(fabs(msg.cntl.angular.z) < 0.13) { //fabs is absolute value
- //       if(-0.13 < msg.cntl.angular.z && msg.cntl.angular.z <-0.5) {
- //           msg.cntl.angular.z = -0.13;
- //       }
- //       else if(0.5 < msg.cntl.angular.z && msg.cntl.angular.z < 0.13) {
- //           msg.cntl.angular.z = 0.13;
- //       }
- //       else{
- //           msg.cntl.angular.z = 0.0;
- //       }
+    msg.cntl.linear.x = roomba_v_gain * speed.v / max_speed;
+    msg.cntl.angular.z = roomba_omega_gain * speed.v / max_yawrate;
     }
 }
-    //白線の認識
-//    while(white_line_detector == true) {
-//
-//        ROS_INFO("white_line");
-//
-//        msg.cntl.linear.x = 0.0;
-//        msg.cntl.angular.z = 0.0;
-//        ctrl_pub.publish(msg);
-//        sleep(5);
-//
-//        ROS_INFO("Restart");
-//
-//        msg.cntl.linear.x = 0.2;
-//        msg.cntl.angular.z = 0.0;
-//        ctrl_pub.publish(msg);
-//        sleep(1);
-//
-//        break;
-//    }
     //ゴール判別
     // if(dist == false && roomba.x > 2.0) {
         // dist = true;
