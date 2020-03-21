@@ -46,9 +46,9 @@ class DWA
 {
 public:
     DWA();
-    void estpose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr&);
+    void estimatedpose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr&);
     void targetpose_callback(const geometry_msgs::PointStamped::ConstPtr&);
-    void whiteline_callback(const std_msgs::Bool);
+    // void whiteline_callback(const std_msgs::Bool);
     void lasercallback(const sensor_msgs::LaserScan::ConstPtr&);
     void dwa_control(State&,Speed&,Goal,Dynamic_Window);
     void process();
@@ -86,8 +86,8 @@ private:
     double roomba_v_gain;
     double roomba_omega_gain;
     int hz;
-    bool white_line_detector;
-    bool dist;
+    // bool white_line_detector;
+    // bool dist;
     State roomba ={0.0, 0.0, 0.0, 0.0, 0.0};
     // {x, y, yaw,v, omega}
     Speed u = {0.0, 0.0};
@@ -101,7 +101,7 @@ private:
     ros::NodeHandle private_nh;
 
     ros::Subscriber laser_sub;
-    ros::Subscriber est_pose_sub;
+    ros::Subscriber estimated_pose_sub;
     ros::Subscriber target_pose_sub;
     ros::Subscriber whiteline_sub;
 
@@ -110,7 +110,7 @@ private:
   //ros::Rate loop_rate();
 
     roomba_500driver_meiji::RoombaCtrl msg;
-    geometry_msgs::PoseWithCovarianceStamped est_pose_msg;
+    geometry_msgs::PoseWithCovarianceStamped estimated_pose_msg;
 
 };
 
