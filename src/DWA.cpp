@@ -1,4 +1,4 @@
-#include "DWA/DWA.h"
+#include "DWA.h"
 
 const int N = 720;
 LaserData Ldata[N];
@@ -348,7 +348,6 @@ int main(int argc, char **argv)
     dwa.process();
     return 0;
 }
-
 
 
 
