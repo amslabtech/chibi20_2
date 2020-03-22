@@ -8,14 +8,14 @@
 DWA::DWA() :private_nh("~")
 {
     const int N = 720;
-                 // {x, y, yaw,v, omega}
+              //    {x,   y, yaw,   v, omega}
     State roomba ={0.0, 0.0, 0.0, 0.0, 0.0};
-
-                 // {v, omega}
+              //    {v, omega}
     Speed speed = {0.0, 0.0};
-
-                 //  {min_v, max_v, min_omega, max_omega}
+              //      {min_v, max_v, min_omega, max_omega}
     Dynamic_Window dw = {0.0, 0.0, 0.0, 0.0};
+              //{x. y}
+    Goal goal = {0, 0};
 
     private_nh.param("max_speed", max_speed,{0.5});
     private_nh.param("min_speed", min_speed,{-0.5});
@@ -37,7 +37,6 @@ DWA::DWA() :private_nh("~")
     laser_sub = nh.subscribe("scan", 1,&DWA::lasercallback, this);
     estimated_pose_sub = nh.subscribe("chibi20_2/estimated_pose", 1,&DWA::estimatedpose_callback, this);
     target_pose_sub = nh.subscribe("chibi20_2/target", 1, &DWA::targetpose_callback, this);
-    // whiteline_sub = nh.subscribe("whiteline", 1, &DWA::whiteline_callback, this);
    // Publisher
     ctrl_pub = nh.advertise<roomba_500driver_meiji::RoombaCtrl>("roomba/control", 1);
 }
