@@ -1,9 +1,5 @@
 #include "DWA/DWA.h"
 
-// const int N = 720;
-// LaserData Ldata[N];
-// Goal goal = {0, 0};
-
 //初期化
 DWA::DWA() :private_nh("~")
 {
@@ -276,7 +272,7 @@ void DWA::lasercallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 void DWA::process()
 {
     ros::Rate loop_rate(hz);
-    while(ros::ok())
+    while (ros::ok())
     {
     ros::spinOnce();
 
