@@ -61,6 +61,7 @@ void DWA::motion(State& roomba, Speed speed) //method
     roomba.v = speed.v;
     roomba.omega = speed.omega;
 }
+
 //ダイナミックウィンドウを作る
 void DWA::calc_dynamic_window(Dynamic Window& dw, State& roomba)
 {
@@ -124,6 +125,7 @@ double DWA::calc_to_goal_cost(std::vector<State>& traj, Goal goal, State roomba)
 
     return to_goal_cost_gain * error_angle;
 }
+
 //目的地までの距離を計算
 double DWA::calc_goal_dist(std::vector<State>& traj, Goal goal)
 {
@@ -251,6 +253,7 @@ void DWA::calc_final_input(State roomba, Speed& speed, Dynamic Window& dw, Goal 
     }
     speed = min_speed;
 }
+
 //DWAの実行
 void DWA::dwa_control(State& roomba, Speed& speed, Goal goal, Dynamic Window dw)
 {
@@ -258,6 +261,7 @@ void DWA::dwa_control(State& roomba, Speed& speed, Goal goal, Dynamic Window dw)
 
     calc_final_input(roomba, speed, dw, goal);
 }
+
 //センサからの情報を引数としてわたす
 void DWA::lasercallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
