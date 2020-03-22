@@ -13,7 +13,7 @@ DWA::DWA() :private_nh("~")
               //    {v, omega}
     Speed speed = {0.0, 0.0};
               //      {min_v, max_v, min_omega, max_omega}
-    Dynamic_Window dw = {0.0, 0.0, 0.0, 0.0};
+    Dynamic Window dw = {0.0, 0.0, 0.0, 0.0};
               //{x. y}
     Goal goal = {0, 0};
 
@@ -28,6 +28,7 @@ DWA::DWA() :private_nh("~")
     private_nh.param("predict_time", predict_time,{2.0});
     private_nh.param("to_goal_cost_gain", to_goal_cost_gain,{1.0});
     private_nh.param("speed_cost_gain", speed_cost_gain,{1.0});
+    private_nh.param("dist_gain", dist_gain,{3.0});
     private_nh.param("robot_radius", robot_radius,{0.34});
     private_nh.param("roomba_v_gain", roomba_v_gain,{2.0});
     private_nh.param("roomba_omega_gain", roomba_omega_gain,{2.0});
@@ -65,14 +66,14 @@ void DWA::motion(State& roomba, Speed speed) //method
     roomba.omega = speed.omega;
 }
 //ダイナミックウィンドウを作る
-void DWA::calc_dynamic_window(Dynamic_Window& dw, State& roomba) //method
+void DWA::calc_dynamic_window(Dynamic Window& dw, State& roomba)
 {
-    Dynamic_Window Vs = {min_speed,
+    Dynamic Window Vs = {min_speed,
                          max_speed,
                          -max_yawrate,
                          max_yawrate};
 
-    Dynamic_Window Vd = {roomba.v -(max_accel * dt),
+    Dynamic Window Vd = {roomba.v -(max_accel * dt),
                          roomba.v + (max_accel * dt),
                          roomba.omega - (max_dyawrate * dt),
                          roomba.omega + (max_dyawrate * dt)};
@@ -85,11 +86,10 @@ void DWA::calc_dynamic_window(Dynamic_Window& dw, State& roomba) //method
 return;
 }
 
-//軌道を探索 //i,j need revised to vector
-void DWA::calc_trajectory(std::vector<State>& traj, State roomba, double i, double j)
+//軌道を探索
+void DWA::calc_trajectory(std::vector<State>& traj, State roomba)
 {                      // {x,   y, yaw,   v, omega}
     State roomba_traj = {0.0, 0.0, 0.0, 0.0, 0.0};
-    Speed speed = {i,j};
     traj.clear();
     double roomba_traj_speed = 0.0;
     double roomba_traj_v = 0.0;
@@ -118,7 +118,6 @@ double DWA::calc_to_goal_cost(std::vector<State>& traj, Goal goal, State roomba)
     //内積の計算
     double dot_product = (goal.x - traj.back().x) * traj.back().x + (goal.y - traj.back().y) * traj.back().y;
 
-    //errorはcos(theta)の値
     double error = dot_product / (goal_length * traj_length);
 
     if(error < -0.8){
@@ -209,7 +208,7 @@ double DWA::calc_obstacle_cost(State roomba, std::vector<State> traj)
 }
 
 //選出した速度, 加速度をロボットに代入
-void DWA::calc_final_input(State roomba, Speed& speed, Dynamic_Window& dw, Goal goal)
+void DWA::calc_final_input(State roomba, Speed& speed, Dynamic Window& dw, Goal goal)
 {
     double min_cost = 1e8;
     Speed min_speed = speed;
@@ -228,7 +227,7 @@ void DWA::calc_final_input(State roomba, Speed& speed, Dynamic_Window& dw, Goal 
             to_goal_cost = calc_to_goal_cost(traj, goal, roomba);
 
 //mazical number, 3.0 needs altering to gain;
-            goal_dist = 3.0 * calc_goal_dist(traj, goal);
+            goal_dist = dist_gain * calc_goal_dist(traj, goal);
             obstacle_cost = calc_obstacle_cost(roomba, traj);
             final_cost = to_goal_cost + goal_dist + speed_cost + obstacle_cost;
 
@@ -240,7 +239,7 @@ void DWA::calc_final_input(State roomba, Speed& speed, Dynamic_Window& dw, Goal 
 
             calc_trajectory(traj, roomba, i, center - j);
             to_goal_cost = calc_to_goal_cost(traj, goal, roomba);
-            goal_dist = 3.0 * calc_goal_dist(traj, goal);
+            goal_dist = dist_gain * calc_goal_dist(traj, goal);
 
             obstacle_cost = calc_obstacle_cost(roomba, traj);
 
@@ -257,7 +256,7 @@ void DWA::calc_final_input(State roomba, Speed& speed, Dynamic_Window& dw, Goal 
     speed = min_speed;
 }
 //DWAの実行
-void DWA::dwa_control(State& roomba, Speed& speed, Goal goal, Dynamic_Window dw)
+void DWA::dwa_control(State& roomba, Speed& speed, Goal goal, Dynamic Window dw)
 {
     calc_dynamic_window(dw, roomba);
 
