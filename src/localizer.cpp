@@ -6,6 +6,7 @@
 #include "nav_msgs/Odometry.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/Pose.h"
+#include "geometry_msgs/PoseArray.h"
 #include "sensor_msgs/LaserScan.h"
 #include "tf/transform_broadcaster.h"
 #include "tf/transform_listener.h"
@@ -34,6 +35,7 @@ sensor_msgs::LaserScan laser;
 geometry_msgs::PoseStamped estimated_pose;
 geometry_msgs::PoseStamped current_pose;
 geometry_msgs::PoseStamped previous_pose;
+geometry_msgs::PoseArray poses;
 
 std::vector<Particle> particles;
 
@@ -84,9 +86,11 @@ void map_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
     for(int i = 0; i < N; i++){
         Particle p;
         p.p_init(INIT_X,INIT_Y,INIT_YAW,INIT_X_COV,INIT_Y_COV,INIT_YAW_COV);
+        poses.poses.push_back(p.pose.pose);
         init_particles.push_back(p);
     }
     particles = init_particles;
+    poses.header.frame_id = "map";
 }
 
 void laser_callback(const sensor_msgs::LaserScan::ConstPtr& msg)
@@ -295,14 +299,15 @@ int main(int argc,char **argv)
     private_nh.getParam("ALPHA_FAST",ALPHA_FAST);
 
      //Subscriber
-     ros::Subscriber map_sub = nh.subscribe("/map",100,map_callback);
+     ros::Subscriber map_sub = nh.subscribe("/fixed_map",100,map_callback);
      ros::Subscriber lsr_sub = nh.subscribe("/scan",100,laser_callback);
      ros::Subscriber odo_sub = nh.subscribe("/roomba/odometry",100,odometry_callback);
 
      //Publisher
     ros::Publisher estimated_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/estimated_pose",100);
+    ros::Publisher estimated_poses_pub = nh.advertise<geometry_msgs::PoseArray>("/estimated_poses",100);
 
-    particles.reserve(1000);
+    particles.reserve(2000);
 
     tf::TransformBroadcaster broadcaster;
     tf::TransformListener listener;
@@ -316,12 +321,14 @@ int main(int argc,char **argv)
 
     ros::Rate rate(10);
     while(ros::ok()){
-        if(get_map /* && !laser.ranges.empty() */){
+        if(get_map && !laser.ranges.empty()){
             ROS_INFO("Processing strat!");
             estimated_pose.header.frame_id = "map";
+            poses.header.frame_id = "map";
 
             tf::StampedTransform transform;
             transform = tf::StampedTransform(tf::Transform(tf::createQuaternionFromYaw(0.0),tf::Vector3(0.0,0.0,0.0)),ros::Time::now(),"odom","base_link");
+            std::cout << "1" << std::endl;
             try{
                 //base_linkからodomへ
                 listener.waitForTransform("odom","base_link",ros::Time(0),ros::Duration(1.0));
@@ -332,10 +339,18 @@ int main(int argc,char **argv)
                 ros::Duration(1.0).sleep();
             }
 
+            std::cout << "2" << std::endl;
+
             //current_poseへ格納
             current_pose.pose.position.x = transform.getOrigin().x();
             current_pose.pose.position.y = transform.getOrigin().y();
             quaternionTFToMsg(transform.getRotation(),current_pose.pose.orientation);
+
+            std::cout << "current_x: " << current_pose.pose.position.x << std::endl;
+            std::cout << "current_y: " << current_pose.pose.position.y << std::endl;
+
+            std::cout << "3" << std::endl;
+
             /*
             //移動したと仮定(あとで消す)
             current_pose.pose.position.x = 10;
@@ -367,6 +382,8 @@ int main(int argc,char **argv)
                 particles = set_particles;
             }
 
+            std::cout << "4" << std::endl;
+
             //移動距離(あとで消す)
             /*
             std::cout << std::endl;
@@ -396,13 +413,18 @@ int main(int argc,char **argv)
             }
             //std::cout << std::endl;
 
+            std::cout << "5" << std::endl;
 
             //尤度処理
             double weight_sum = 0.0;
             for(int i = 0; i < N; i++){
+                std::cout << i << std::endl;
                 particles[i].p_measurement_update();
                 weight_sum += particles[i].weight;
             }
+
+            std::cout << "5.5" <<std::endl;
+
             double weight_average = 0.0;
             int max_index = 0;
             for(int i = 0; i < N; i++){
@@ -413,6 +435,7 @@ int main(int argc,char **argv)
                 particles[i].weight /= weight_sum;
             }
 
+            std::cout << "6" << std::endl;
 
             weight_average /= (double)N;
             if(weight_average ==  0 || std::isnan(weight_average)){
@@ -434,9 +457,10 @@ int main(int argc,char **argv)
                 weight_fast += ALPHA_FAST*(weight_average - weight_fast);
             }
 
-
+            std::cout << "before update" << std::endl;
             if(update_flag){
                 //Resampling
+                std::cout << "start resampling" << std::endl;
                 std::uniform_real_distribution<> dist(0.0,1.0);
                 int index = (int)(dist(engine)*N);
                 double beta = 0.0;
@@ -474,7 +498,9 @@ int main(int argc,char **argv)
         }
 
         int max_index = 0;
+        poses.poses.reserve(2000);
         for(int i = 0; i < N; i++){
+            poses.poses[i] = particles[i].pose.pose;
             if(particles[i].weight > particles[max_index].weight)
                 max_index = i;
         }
@@ -486,6 +512,7 @@ int main(int argc,char **argv)
         std::cout << "estimated_pose.yaw: " << get_Yaw(estimated_pose.pose.orientation) << std::endl;
 
         estimated_pose_pub.publish(estimated_pose);
+        estimated_poses_pub.publish(poses);
         ROS_INFO("Publish complete");
 
         try{
@@ -557,6 +584,7 @@ void Particle::p_motion_update(geometry_msgs::PoseStamped current,geometry_msgs:
     distance_sum += sqrt(dx*dx + dy*dy);
     angle_sum += fabs(dyaw);
 
+    std::cout << "a" << std::endl;
     update_flag = judge_update(distance_sum,angle_sum);
     if(update_flag){
         distance_sum = 0.0;
