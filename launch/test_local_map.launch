@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+    <node pkg="chibi20_2" type="local_map_creator" name="local_map_creator" output="screen"/>
+</launch>

@@ -95,11 +95,9 @@ void A_Star_Planner::expand_wall()
     {
         for (int j = downlimit.y; j < uplimit.y; j++)
         {
-            // std::cout<<"i,j"<<i<<","<<j<<std::endl;
             if(grid_map[i][j] == 100) add_wall(i,j);
         }
     }
-    std::cout<<grid_map[1860][2000]<<std::endl;
 }
 
 void A_Star_Planner::add_wall(int x,int y)
