@@ -295,7 +295,7 @@ int main(int argc,char **argv)
     private_nh.getParam("ALPHA_FAST",ALPHA_FAST);
 
      //Subscriber
-     ros::Subscriber map_sub = nh.subscribe("/map",100,map_callback);
+     ros::Subscriber map_sub = nh.subscribe("/fixed_map",100,map_callback);
      ros::Subscriber lsr_sub = nh.subscribe("/scan",100,laser_callback);
      ros::Subscriber odo_sub = nh.subscribe("/roomba/odometry",100,odometry_callback);
 
@@ -316,7 +316,7 @@ int main(int argc,char **argv)
 
     ros::Rate rate(10);
     while(ros::ok()){
-        if(get_map /* && !laser.ranges.empty() */){
+        if(get_map && !laser.ranges.empty()){
             ROS_INFO("Processing strat!");
             estimated_pose.header.frame_id = "map";
 
