@@ -139,10 +139,15 @@ include
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-#  add_executable(laser src/laser.cpp)
-# add_executable(roomba_controller src/roomba_controller.cpp)
-# add_executable(DWA src/DWA.cpp)
-#  add_executable(move src/move.cpp)
+ add_executable(roomba_controller src/roomba_controller.cpp)
+ add_executable(DWA src/DWA.cpp)
+#add_executable(move src/move.cpp)
+#add_executable(laser src/laser.cpp)
+#add_executable(global_path_tester src/global_path_tester.cpp)
+#add_executable(new_localizer src/new_localizer.cpp)
+#add_executable(localizer2 src/localizer2.cpp)
+#add_executable(laser src/laser.cpp)
+
 add_executable(global_path_planner src/global_path_planner.cpp)
 add_executable(map_maneger src/map_maneger.cpp)
 add_executable(local_goal_creator src/local_goal_creator.cpp)
@@ -151,7 +156,6 @@ add_executable(local_map_creator src/local_map_creator.cpp)
 add_executable(localizer src/localizer.cpp)
  # add_executable(test_localizer src/test_localizer.cpp)
  # add_executable(test_amcl src/test_amcl.cpp)
-
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -162,9 +166,16 @@ add_executable(localizer src/localizer.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 
+
+#add_dependencies(new_localizer ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(localizer2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+ add_dependencies(localizer ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+ add_dependencies(DWA ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(global_path_tester  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(laser  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(move  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_dependencies(test_amcl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_dependencies(test_localizer ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(localizer ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 # add_dependencies(DWA ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(global_path_planner  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(map_maneger  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -174,21 +185,34 @@ add_dependencies(local_map_creator  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin
 #  add_dependencies(laser  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 # add_dependencies(move  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+
  ## Specify libraries to link a library or executable target against
  target_link_libraries(localizer ${catkin_LIBRARIES} )
  # target_link_libraries(test_amcl ${catkin_LIBRARIES})
  #target_link_libraries(test_localizer ${catkin_LIBRARIES} )
+#target_link_libraries(new_localizer ${catkin_LIBRARIES} )
+#target_link_libraries(localizer2 ${catkin_LIBRARIES} )
  target_link_libraries(global_path_planner   ${catkin_LIBRARIES} )
+#target_link_libraries(global_path_tester   ${catkin_LIBRARIES} )
+ target_link_libraries(DWA ${catkin_LIBRARIES} )
+ target_link_libraries(roomba_controller   ${catkin_LIBRARIES} )
+#target_link_libraries(laser   ${catkin_LIBRARIES} )
+#target_link_libraries(move   ${catkin_LIBRARIES}
+
+
+
+ ## Specify libraries to link a library or executable target against
+# target_link_libraries(localizer ${catkin_LIBRARIES} )
+# target_link_libraries(global_path_planner   ${catkin_LIBRARIES} )
 #target_link_libraries(amcl ${catkin_LIBRARIES} )
 # target_link_libraries(DWA ${catkin_LIBRARIES} )
-target_link_libraries(global_path_planner   ${catkin_LIBRARIES} )
 target_link_libraries(map_maneger   ${catkin_LIBRARIES} )
 target_link_libraries(local_goal_creator   ${catkin_LIBRARIES} )
 target_link_libraries(local_map_creator   ${catkin_LIBRARIES} )
 # target_link_libraries(roomba_controller   ${catkin_LIBRARIES} )
+# target_link_libraries(global_path_tester   ${catkin_LIBRARIES} )
 #  target_link_libraries(laser   ${catkin_LIBRARIES} )
 #  target_link_libraries(move   ${catkin_LIBRARIES} )
-
 
 #############
 ## Install ##

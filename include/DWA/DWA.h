@@ -20,6 +20,7 @@ struct State{
     double omega;
 };
 
+//軌跡を探索するときに(v, omega)の組み合わせを考えるのに使う
 struct Speed{
    double v;
    double omega;
@@ -35,7 +36,7 @@ struct LaserData{
     double range;
 };
 
-struct Dynamic_Window{
+struct Dynamic Window{
     double min_v;
     double max_v;
     double min_omega;
@@ -46,28 +47,26 @@ class DWA
 {
 public:
     DWA();
-
-    void estpose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr&);
+    void estimatedpose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr&);
     void targetpose_callback(const geometry_msgs::PointStamped::ConstPtr&);
-    void whiteline_callback(const std_msgs::Bool);
+    // void whiteline_callback(const std_msgs::Bool);
     void lasercallback(const sensor_msgs::LaserScan::ConstPtr&);
-
+    void dwa_control(State&,Speed&,Goal,Dynamic Window);
+    void process();
 private:
     //method
     void motion(State&,Speed);
-    void trajectory(std::vector<State>&,State,double,double);
     double to_goal_cost(std::vector<State>&,Goal,State);
     double calc_goal_dist(std::vector<State>&, Goal);
     double speed_cost(std::vector<State>);
     double obsatcle_cost(State,std::vector<State>);
-    void final_input(State,Speed&,Dynamic_Window&,Goal);
-    void dwa_control(State&,Speed&,Goal,Dynamic_Window);
-    void calc_dynamic_window(Dynamic_Window&,State&);
-    void calc_trajectory(std::vector<State>&, State, double, double);
+    void final_input(State,Speed&,Dynamic Window&,Goal);
+    void calc_dynamic_window(Dynamic Window&,State&);
+    void calc_trajectory(std::vector<State>&, State);
     double calc_to_goal_cost(std::vector<State>&, Goal, State);
     double calc_speed_cost(std::vector<State>);
     double calc_obstacle_cost(State, std::vector<State>);
-    void calc_final_input(State, Speed&, Dynamic_Window&, Goal);
+    void calc_final_input(State, Speed&, Dynamic Window&, Goal);
 
     //parameter
     double max_speed;
@@ -86,18 +85,24 @@ private:
     double robot_radius;
     double roomba_v_gain;
     double roomba_omega_gain;
+    int hz;
+    int N;
+    // bool dist;
+    LaserData Ldata[N];
+    State roomba;
+    // {x, y, yaw,v, omega}
+    Speed speed;
+    Dynamic Window dw;
+   // double yaw = 0.0; //temporarily removed
+    // bool turn = false; //false = Right, true = Left
+    Goal goal = {0, 0};
 
     //member
-    ros::NodeHandle roomba_ctrl_pub;
-    ros::NodeHandle roomba_odometry_sub;
-    ros::NodeHandle scan_laser_sub;
-    ros::NodeHandle est_pose;
-    ros::NodeHandle target_pose;
-    ros::NodeHandle whiteline;
+    ros::NodeHandle nh;
     ros::NodeHandle private_nh;
 
     ros::Subscriber laser_sub;
-    ros::Subscriber est_pose_sub;
+    ros::Subscriber estimated_pose_sub;
     ros::Subscriber target_pose_sub;
     ros::Subscriber whiteline_sub;
 
@@ -105,7 +110,8 @@ private:
 
   //ros::Rate loop_rate();
 
-    geometry_msgs::PoseWithCovarianceStamped est_pose_msg;
+    roomba_500driver_meiji::RoombaCtrl msg;
+    geometry_msgs::PoseWithCovarianceStamped estimated_pose_msg;
 
 };
 
