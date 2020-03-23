@@ -17,20 +17,20 @@ A_Star_Planner::A_Star_Planner() :private_n("~")
     private_n.param("checkpoint",checkpoint,{1});
 
     // //subscriber
-    sub_map=n.subscribe("map",10,&A_Star_Planner::map_callback,this);
+    sub_map=n.subscribe("fixed_map",10,&A_Star_Planner::map_callback,this);
     // sub_pose=n.subscribe("chibi20_2/localizer",1,&A_Star_Planner::pose_callback,this);
     //
     // //publisher
     pub_path=n.advertise<nav_msgs::Path>("global_path",1);
     pub_open_grid=n.advertise<geometry_msgs::PointStamped>("searching_grid",1);//探索中のグリッドをrvizに配信するためのだからシステム的に使うことはないと思う
-    pub_updated_map=n.advertise<nav_msgs::OccupancyGrid>("updated_map",1);
+    // pub_updated_map=n.advertise<nav_msgs::OccupancyGrid>("updated_map",1);
 
 
 }
 
 void A_Star_Planner::map_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 {
-    ROS_INFO("map_received");
+    ROS_INFO("fixed_map_recieved");
     if(map_received)
         return;
     prior_map=*msg;
@@ -257,6 +257,7 @@ void A_Star_Planner::update_searching_grid()
         std::cout<<"cannot make global path"<<std::endl;
         show_open_list();
         show_close_list();
+        std::cout<<"global_path_planner is shutting down"<<std::endl;
         std::exit(1);
     }
     else
@@ -362,7 +363,7 @@ void A_Star_Planner::process()
     {
         if(map_received)
         {
-            map_turn();
+            // map_turn();
             make_limit();
             for(checkpoint=1;checkpoint<9;checkpoint++)
             {
@@ -388,74 +389,12 @@ void A_Star_Planner::process()
     }
 }
 
-void A_Star_Planner::map_turn()
-{
-    std::vector<std::vector<int>> turned_map;
-    turned_map.resize(row,std::vector<int>(column,-1));
-    Coordinate move_length;
-    move_length.x=975;
-    move_length.y=690;
-    for(int i=0;i<row;i++)
-    {
-        for(int j=0;j<column;j++)
-        {
-            if(grid_map[i][j]!=-1)
-            {
-                 turned_map[i-move_length.x][j-move_length.y]=grid_map[i][j];
-            }
-        }
-    }
-    nav_msgs::OccupancyGrid updated_map;
-    updated_map.info=prior_map.info;
-    for(int i=0;i<column;i++)
-    {
-        for(int j=0;j<row;j++)
-        {
-            updated_map.data.push_back(turned_map[j][i]);
-        }
-    }
-    pub_updated_map.publish(updated_map);
-
-    std::vector<std::vector<int>> rotation_map;
-    rotation_map.resize(row,std::vector<int>(column,-1));
-    double theta;
-    theta=-15*M_PI/180;
-    for(int i=0;i<row;i++)
-    {
-        for(int j=0;j<column;j++)
-        {
-            if(((int)((i-adjust.x)*cos(theta)-(j-adjust.y)*sin(theta)+adjust.x))>=0&&((int)((i-adjust.x)*sin(theta)+(j-adjust.y)*cos(theta)+adjust.y))>=0&&((int)((i-adjust.x)*cos(theta)-(j-adjust.y)*sin(theta)+adjust.x))<row&&((int)((i-adjust.x)*sin(theta)+(j-adjust.y)*cos(theta)+adjust.y))<column)
-            {
-                // std::cout<<(int)((i-adjust.x)*cos(theta)-(j-adjust.y)*sin(theta)+adjust.x)<<","<<(int)((i-adjust.x)*sin(theta)+(j-adjust.y)*cos(theta)+adjust.y)<<std::endl;
-                rotation_map[i][j]=turned_map[(int)((i-adjust.x)*cos(theta)-(j-adjust.y)*sin(theta)+adjust.x)][(int)((i-adjust.x)*sin(theta)+(j-adjust.y)*cos(theta)+adjust.y)];
-            }
-        }
-    }
-    nav_msgs::OccupancyGrid neet_map;
-    neet_map.info=prior_map.info;
-    for(int i=0;i<column;i++)
-    {
-        for(int j=0;j<row;j++)
-        {
-            neet_map.data.push_back(rotation_map[j][i]);
-        }
-    }
-    pub_updated_map.publish(neet_map);
-    for(int i=0;i<row;i++)
-    {
-        for(int j=0;j<column;j++)
-        {
-            grid_map[i][j]=rotation_map[i][j];
-        }
-    }
-}
 
 int main (int argc, char **argv)
 {
   ros::init(argc,argv,"global_path_planner");
-  std::cout<<"test now"<<std::endl;
   A_Star_Planner a_star_planner;
-  std::cout<<"make a_star_planner"<<std::endl;
+  std::cout<<"gloabal_path_planner has started"<<std::endl;
   a_star_planner.process();
   return 0;
 }
