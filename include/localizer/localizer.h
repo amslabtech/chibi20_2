@@ -53,29 +53,28 @@ private:
     double INIT_YAW_COV;
     double MAX_RANGE;
     int RANGE_STEP;
-    double X_TH;
-    double Y_TH;
-    double YAW_TH;
+    double X_COV_TH;
+    double Y_COV_TH;
+    double YAW_COV_TH;
     double P_COV;
-    double MOVE_X_COV;
-    double MOVE_Y_COV;
-    double MOVE_YAW_COV;
+    double MOVE_NOISE_1;
+    double MOVE_NOISE_2;
+    double MOVE_NOISE_3;
+    double MOVE_NOISE_4;
     double ALPHA_SLOW;
     double ALPHA_FAST;
+    double JUDGE_DISTANCE_VALUE;
+    double JUDGE_ANGLE_VALUE;
 
-    int max_index = 0;
-    double x_cov = 0.5;
-    double y_cov = 0.5;
-    double yaw_cov = 0.5;
-    double distance_sum = 0.0;
-    double angle_sum = 0.0;
-    double weight_sum = 0.0;
-    double weight_average;
-    double weight_slow = 0.0;
-    double weight_fast = 0.0;
+    int Hz;
+    double x_cov;
+    double y_cov;
+    double yaw_cov;
+    double weight_slow;
+    double weight_fast;
 
-    bool get_map = false;       //mapを取得したかどうかの判定
-    bool update_flag = false;   //更新するかどうかの判定
+    bool have_map = false;      //mapを取得したかどうかの判定
+    bool is_update = false;     //更新するかどうかの判定
 
     std::vector<Particle> particles;
 
@@ -87,14 +86,11 @@ private:
     ros::Subscriber lsr_sub;
     ros::Subscriber odo_sub;
 
-    ros::Publisher lmc_sub;
-    ros::Publisher gpp_sub;
+    ros::Publisher estimated_pose_pub;
 
     geometry_msgs::PoseStamped estimated_pose;
     geometry_msgs::PoseStamped current_pose;
     geometry_msgs::PoseStamped previous_pose;
-    geometry_msgs::Pose2D pose2d;
-    geometry_msgs::PoseArray poses;
     nav_msgs::Odometry odometry;
     nav_msgs::OccupancyGrid map;
     sensor_msgs::LaserScan laser;

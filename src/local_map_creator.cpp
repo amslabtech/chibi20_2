@@ -1,65 +1,99 @@
-#include "ros/ros.h"
 #include "local_map_creator/local_map_creator.h"
-#include "nav_msgs/OccupancyGrid.h"
-#include "sensor_msgs/LaserScan.h"
+Local_Map_Creator::Local_Map_Creator():private_nh("~")
+{
+    //parameter
+    private_nh.param("hz",hz,{1});
+    private_nh.param("width",width,{5});
+    private_nh.param("height",height,{5});
+    private_nh.param("resolution",resolution,{0.05});
+    private_nh.param("radius_limit",radius_limit,{99});
 
-#include <math.h>
-#include <random>
-#include <iostream>
-#include <vector>
-
-int gmap_width = 200;
-int gmap_height = 200;
-double gmap_resolution = 0.05; //0.05m
-int obstacle_value = 100;
-int safe_value = 0;
-
-struct laser_data{
-    double angle;
-    double range;
+    //subscriber
+    sub_laser_scan = nh.subscribe("scan",10,&Local_Map_Creator::laser_scan_callback,this);
+    //publisher
+    pub_local_map = nh.advertise<nav_msgs::OccupancyGrid>("local_map",1);
 }
 
-laser_data ldata[];
-int 2d_map[][];
-
-void point_cloud__callback(const sensor_msgs::LaserScan::ConstPtr& msg)
+void Local_Map_Creator::laser_scan_callback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
-    std::cout << "recieved laser";
-    polar_coordinates();
+    // std::cout<<"recieved scan_data"<<std::endl;
+    scan_data = *msg;
+    create_local_map();
 }
 
-void polar_coordinates()
+void Local_Map_Creator::create_local_map()
 {
-    sensor_msgs::LaserScan _msg = *msg;
-
-    for(int i=0;i<1080;i++){
-    ldata.angle[i] = _msg.angle_min - range_resolution * _msg.angle_increment;
-    ldata.range[i] = _msg.ranges[i];
-    }
-
+    row = (int)(height/resolution);
+    column = (int)(width/resolution);
+    grid_map.resize(row,std::vector<int>(column,-1));
+    for(int i = 0; i < number_of_laser; i++) convert_coordinate(i);
+    convert_grid_map();
+    pub_local_map.publish(local_map);
 }
 
-void update_grid_map()
+int Local_Map_Creator::get_radius(int n)
 {
-    obstacle();
+    int radius;
+    int radius_limit = (column/2)-1;
+    // double average_length = (scan_data.ranges[n]+scan_data.ranges[n+1]+scan_data.ranges[n+2]+scan_data.ranges[n+3])/4;
+    radius = (int)(scan_data.ranges[n]/resolution);
+    // std::cout<<"radius: "<<radius<<std::endl;
+    if(radius < radius_limit) return radius;
+    else return radius_limit;
 }
-void obstacle(laser_data[])
-{
-    int x = 0;
-    int y = 0;
-    int x_translation = gmap_width  /2;
-    int y_translation = gmap_height /2;
 
-    for(int i=0;i<1080;i++)
+void Local_Map_Creator::convert_coordinate(int i)
+{
+    double theta = (i/4-135)*M_PI/180;
+    // std::cout<<"r,theta: "<<get_radius(i)<<","<<(i-45)<<std::endl;
+    for(int r = 0; r < get_radius(i); r++)
     {
-    x = floor(ldata.range * cos(ldata.angle[i]) );
-    y = floor(ldata.range * sin(ldata.angle[i]) );
-    2d_map[x+x_translation][y+y_translation] = obstacle_value;
-        for(double j = ldata.range;j>0;j = j-map_resolution)
+        grid_map[(int)(r*cos(theta)+row/2)][(int)(r*sin(theta)+column/2)] = 0;
+        // std::cout<<"i,j: "<<cos(theta)<<","<<sin(theta)<<std::endl;
+    }
+    if(get_radius(i) >= radius_limit-1)
+    {
+        grid_map[(int)(get_radius(i)*cos(theta)+row/2)][(int)(get_radius(i)*sin(theta)+column/2)] = 0;
+    }
+    else
+    {
+        grid_map[(int)(get_radius(i)*cos(theta)+row/2)][(int)(get_radius(i)*sin(theta)+column/2)] = 100;
+    }
+}
+
+void Local_Map_Creator::convert_grid_map()
+{
+    local_map.data.clear();
+    local_map.header.frame_id = "local_map";
+    local_map.info.resolution = resolution;
+    local_map.info.width = column;
+    local_map.info.height = row;
+    local_map.info.origin.position.x = -1*(double)height/2;
+    local_map.info.origin.position.y = -1*(double)width/2;
+    for(int i = 0; i < column; i++)
+    {
+        for(int j = 0; j < row; j++)
         {
-        x = floor(ldata.range * cos(ldata.angle[i]) );
-        y = floor(ldata.range * sin(ldata.angle[i]) );
-        2d_map[x+x_translation][y+y_translation] = safe_value;
+            local_map.data.push_back(grid_map[i][j]);
         }
     }
 }
+
+void Local_Map_Creator::process()
+{
+    // ros::Rate loop_rate(hz);
+    // while(ros::ok())
+    // {
+        ros::spin();
+    //     loop_rate.sleep();
+    // }
+}
+
+int main (int argc, char **argv)
+{
+    ros::init(argc,argv,"local_map_creator");
+    Local_Map_Creator local_map_creator;
+    local_map_creator.process();
+    return 0;
+}
+
