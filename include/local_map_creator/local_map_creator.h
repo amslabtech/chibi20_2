@@ -3,49 +3,38 @@
 
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
-#include "nav_msgs/OccupancyGrid"
-
-struct laser_data{
-    double angle;
-    double range;
-}
+#include "nav_msgs/OccupancyGrid.h"
 
 class Local_Map_Creator
 {
  public:
-<<<<<<< HEAD
-     Grid_Map_Creator();
-     void process();
-=======
      Local_Map_Creator();
->>>>>>> 3d56d444940b8450885e8c15f872baab03ac3b3b
+     void process();
 
  private:
     //method
-    void point_cloud_callback(const sensor_msgs::LaserScan::ConstPtr&);
-<<<<<<< HEAD
-    void make_grid_map();
-
-
+    void laser_scan_callback(const sensor_msgs::LaserScan::ConstPtr&);
+    void create_local_map();
+    void convert_coordinate(int);
+    void convert_grid_map();
+    int get_radius(int);
     //parameter
-    std::vector<std::vector<int>> grid_map;
+    int hz;
+    int width;
+    int height;
+    double resolution;
+    int number_of_laser = 1080;
     int row;
     int column;
-
-=======
-    void update_grid_map();//Local Mapの作成及び更新を行う
-
-    //parameter
-    int gmap_width;
-    int gmap_height;
-    double gmap_resolution;
-    int obstacle_value;
-    int safe_value;
->>>>>>> 3d56d444940b8450885e8c15f872baab03ac3b3b
+    int radius_limit;
 
     //member
-    ros::Publisher pub_laser;
-    ros::Subscriber sub_grid;
-    sensor_msgs::LaserScan
-    nav_msgs::OccupancyGrid
+    ros::NodeHandle nh;
+    ros::NodeHandle private_nh;
+    ros::Publisher pub_local_map;
+    ros::Subscriber sub_laser_scan;
+    sensor_msgs::LaserScan scan_data;
+    nav_msgs::OccupancyGrid local_map;
+    std::vector<std::vector<int>> grid_map;
 };
+#endif//LOCAL_MAP_CREATOR_H

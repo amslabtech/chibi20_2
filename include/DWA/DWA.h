@@ -13,8 +13,8 @@
 
 
 struct State{
-    double x;
-    double y;
+    double x;    //robot position x
+    double y;    //robot position y
     double yaw;
     double v;
     double omega;
@@ -49,7 +49,6 @@ public:
     DWA();
     void estimatedpose_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr&);
     void targetpose_callback(const geometry_msgs::PointStamped::ConstPtr&);
-    // void whiteline_callback(const std_msgs::Bool);
     void lasercallback(const sensor_msgs::LaserScan::ConstPtr&);
     void dwa_control(State&,Speed&,Goal,Dynamic Window);
     void process();
@@ -90,7 +89,6 @@ private:
     // bool dist;
     LaserData Ldata[N];
     State roomba;
-    // {x, y, yaw,v, omega}
     Speed speed;
     Dynamic Window dw;
    // double yaw = 0.0; //temporarily removed

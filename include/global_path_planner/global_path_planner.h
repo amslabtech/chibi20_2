@@ -30,8 +30,11 @@ private:
     //method
     void map_callback(const nav_msgs::OccupancyGrid::ConstPtr&);
     void pose_callback(const geometry_msgs::Pose2D::ConstPtr& );
-    void path_creator();
+    void set_map_parameter();
+    void waypoint_path_creator();
     void clean_lists();
+    void expand_wall();
+    void add_wall(int ,int);
     float huristic(const int&,const int&);
     void define_starting_grid();
     void define_goal_grid();
@@ -60,23 +63,24 @@ private:
     int Hz;
     int wall_border;
     int wall_cost;
+    int wall_thickness;
     bool map_received=false;
     bool reached_goal=false;
     bool reached_start=false;
     float proto_g;
     float proto_f;
     int checkpoint;
-    std::vector<std::vector<int>> grid_map;//int grid_map[row][column];
+    std::vector<std::vector<int>> grid_map;
     Coordinate adjust;
     Coordinate goal_grid;
     Coordinate searching_grid;
     Coordinate downlimit;
     Coordinate uplimit;
-    const Coordinate landmark[10]={{2000,2000},{1860,2000},{1860,2340},{2000,2340},{2140,2340},{2140,2000},{2140,1680},{2000,1680},{1860,1680},{1860,2000}};//中央、中央左から時計回り{{0,0},{-140,0},{-140,340},{0,340},{140,340},{140,0},{140,-320},{0,-320},{-140,-320},{-140,0}}
-    // const Coordinate landmark[10]={{2000,2000},{1845,2000},{1860,2340},{2000,2170},{2140,2340},{2070,2000},{2140,1680},{2000,1650},{1860,1680},{1845,2000}};
+    // const Coordinate landmark[10]={{2000,2000},{1860,2000},{1860,2340},{2000,2340},{2140,2340},{2140,2000},{2140,1680},{2000,1680},{1860,1680},{1860,2000}};//中央、中央左から時計回り{{0,0},{-140,0},{-140,340},{0,340},{140,340},{140,0},{140,-320},{0,-320},{-140,-320},{-140,0}}
+    const Coordinate landmark[10]={{2000,2000},{1845,2000},{1860,2340},{2000,2170},{2140,2340},{2070,2000},{2140,1680},{2000,1650},{1860,1680},{1845,2000}};
     Coordinate tracing_grid;
-    std::vector<std::vector<Costs>>open_list;//Costs open_list[row][column];
-    std::vector<std::vector<Costs>>close_list;//Costs close_list[row][column];
+    std::vector<std::vector<Costs>>open_list;
+    std::vector<std::vector<Costs>>close_list;
 
 
     //member
@@ -84,13 +88,13 @@ private:
     ros::NodeHandle private_n;
     ros::Publisher pub_path;
     ros::Subscriber sub_map;
-    ros::Subscriber sub_map_metadata;
     ros::Subscriber sub_pose;
     nav_msgs::OccupancyGrid prior_map;//元マップデータ格納
     nav_msgs::MapMetaData map_metadata;
     nav_msgs::OccupancyGrid updated_map;//経路封鎖時にLocalMapCreaterから受取
     geometry_msgs::Pose2D current_pose;//経路封鎖時のスタート位置用
     nav_msgs::Path global_path;//LocalPathPlannerに出力
+    nav_msgs::Path waypoint_path;
     //for debagging
     ros::Publisher pub_open_grid;
 
