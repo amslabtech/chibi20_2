@@ -27,6 +27,7 @@ class Local_Map_Creator
     int row;
     int column;
     int radius_limit;
+    bool is_edge;
 
     //member
     ros::NodeHandle nh;

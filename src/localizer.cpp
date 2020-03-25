@@ -205,10 +205,11 @@ double get_Range(double x,double y,double yaw)
     }
 
     while(cx != (cx_1 + xstep)){
-        x += xstep;
+        std::cout<<"cx,cx_1+xstep: "<<cx<<","<<cx_1+xstep<<std::endl;
+        cx += xstep;
         error += dy;
         if(2*error >= dx){
-            y += ystep;
+           cy += ystep;
             error -= dx;
         }
         if(judge){
@@ -640,7 +641,6 @@ void Particle::p_measurement_update()
     for(int i = 0; i < (int)laser.ranges.size(); i += RANGE_STEP){
         angle = laser.angle_min + i*laser.angle_increment;
         map_range = get_Range(pose.pose.position.x,pose.pose.position.y,get_Yaw(pose.pose.orientation)+ angle);
-
         range_diff += pow((laser.ranges[i] - map_range),2);
 
         /* ---(テスト用に適当にrange_diffを定義,あとで消す)
