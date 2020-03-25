@@ -1,12 +1,14 @@
 #include "DWA/DWA.h"
 
-const int N = 720;
-LaserData Ldata[N];
 // Goal goal = {0, 0};
 
 //初期化
 DWA::DWA() :private_nh("~")
 {
+    const int N = 720;
+    Dynamic_Window dw = {0.0, 0.0, 0.0, 0.0};
+    Goal goal = {0, 0};
+
     private_nh.param("max_speed", max_speed,{0.5});
     private_nh.param("min_speed", min_speed,{-0.5});
     private_nh.param("max_yawrate", max_yawrate,{0.5});
@@ -54,11 +56,11 @@ void DWA::targetpose_callback(const geometry_msgs::PointStamped::ConstPtr& msg) 
 //ルンバの動きと状態, local mapと被る
 void DWA::motion(State& roomba, Speed u) //method
 {
-    roomba.yaw += u.omega * dt;
-    roomba.x += u.v * std::cos(roomba.yaw) * dt;
-    roomba.y += u.v * std::sin(roomba.yaw) * dt;
-    roomba.v = u.v;
-    roomba.omega = u.omega;
+    roomba.yaw += speed.omega * dt;
+    roomba.x += speed.v * std::cos(roomba.yaw) * dt;
+    roomba.y += speed.v * std::sin(roomba.yaw) * dt;
+    roomba.v = speed.v;
+    roomba.omega = speed.omega;
 }
 //ダイナミックウィンドウを作る
 void DWA::calc_dynamic_window(Dynamic_Window& dw, State& roomba) //method
@@ -92,13 +94,13 @@ void DWA::calc_trajectory(std::vector<State>& traj, State roomba, double i, doub
 
 
     for(double t = 0.0; t<= predict_time; t +=dt){
-        roomba_traj.yaw += u.omega * dt;
-        roomba_traj_u += u.v * std::cos(roomba_traj.yaw) * dt;
-        roomba_traj_v += u.v * std::sin(roomba_traj.yaw) * dt;
+        roomba_traj.yaw += speed.omega * dt;
+        roomba_traj_u += speed.v * std::cos(roomba_traj.yaw) * dt;
+        roomba_traj_v += speed.v * std::sin(roomba_traj.yaw) * dt;
         roomba_traj.x = roomba.x + (roomba_traj_u * std::cos(roomba.yaw)) - (roomba_traj_v * std::sin(roomba.yaw));
         roomba_traj.y = roomba.y + (roomba_traj_u * std::sin(roomba.yaw)) - (roomba_traj_v * std::cos(roomba.yaw));
-        roomba_traj.v = u.v;
-        roomba_traj.omega = u.omega;
+        roomba_traj.v = speed.v;
+        roomba_traj.omega = speed.omega;
         traj.push_back(roomba_traj);
 
 
@@ -206,7 +208,7 @@ void DWA::calc_final_input(State roomba, Speed& u, Dynamic_Window& dw, Goal goal
 {
     double min_cost = 1e8;
     Speed min_u = u;
-    min_u.v = 0.0;
+    min_speed.v = 0.0;
     std::vector<State> traj;
     double to_goal_cost = 0.0;
     double goal_dist = 0.0;
@@ -228,8 +230,8 @@ void DWA::calc_final_input(State roomba, Speed& u, Dynamic_Window& dw, Goal goal
 
             if(min_cost >= final_cost) {
                 min_cost = final_cost;
-                min_u.v = i;
-                min_u.omega = center + j;
+                min_speed.v = i;
+                min_speed.omega = center + j;
             }
 
             calc_trajectory(traj, roomba, i, center - j);
@@ -243,8 +245,8 @@ void DWA::calc_final_input(State roomba, Speed& u, Dynamic_Window& dw, Goal goal
 
             if(min_cost >= final_cost) {
                 min_cost = final_cost;
-                min_u.v = i;
-                min_u.omega = center - j;
+                min_speed.v = i;
+                min_speed.omega = center - j;
             }
         }
     }
@@ -277,15 +279,15 @@ void DWA::process()
 
     //motion(roomba, u);
     roomba.yaw = tf::getYaw(estimated_pose_msg.pose.pose.orientation);
-    roomba.v = u.v;
-    roomba.omega = u.omega;
+    roomba.v = speed.v;
+    roomba.omega = speed.omega;
     roomba.x = estimated_pose_msg.pose.pose.position.x;
     roomba.y = estimated_pose_msg.pose.pose.position.y;
 
-    dwa_control(roomba, u, goal, dw);
+    dwa_control(roomba, speed, goal, dw);
     //ゴールの方に向いているか
-    msg.cntl.linear.x = roomba_v_gain * u.v / max_speed;
-    msg.cntl.angular.z = roomba_omega_gain * u.v / max_yawrate;
+    msg.cntl.linear.x = roomba_v_gain * speed.v / max_speed;
+    msg.cntl.angular.z = roomba_omega_gain * speed.v / max_yawrate;
 //    if(fabs(msg.cntl.angular.z) < 0.13) { //fabs is absolute value
  //       if(-0.13 < msg.cntl.angular.z && msg.cntl.angular.z <-0.5) {
  //           msg.cntl.angular.z = -0.13;

@@ -93,10 +93,10 @@ private:
     State roomba;
     // {x, y, yaw,v, omega}
     Speed speed;
-    Dynamic_Window dw = {0.0, 0.0, 0.0, 0.0};
+    Dynamic_Window dw;
    // double yaw = 0.0; //temporarily removed
     // bool turn = false; //false = Right, true = Left
-    Goal goal = {0, 0};
+    Goal goal;
 
     //member
     ros::NodeHandle nh;
