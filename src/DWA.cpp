@@ -110,20 +110,22 @@ double DWA::calc_to_goal_cost(std::vector<State>& traj, Goal goal, State roomba)
     double goal_length = std::sqrt(pow(goal.x - traj.back().x, 2) + pow(goal.y - traj.back().y, 2));
 
     //最終位置とロボットとの距離
-    double traj_length = std::sqrt(pow(traj.back().x, 2) + pow(traj.back().y, 2));
+    double traj_length = std::sqrt(pow(traj.front().x - traj.back().x, 2) + pow(traj.front().y - traj.back().y, 2));
+    // double traj_length = std::sqrt(pow(traj.back().x, 2) + pow(traj.back().y, 2));
 
     //内積の計算
-    double dot_product = (goal.x - traj.back().x) * traj.back().x + (goal.y - traj.back().y) * traj.back().y;
+    double dot_product = (goal.x - traj.back().x) * (traj.front().x -traj.back().x) + (goal.y - traj.back().y) * (traj.front().y -traj.back().)y;
+    // double dot_product = (goal.x - traj.back().x) * traj.back().x + (goal.y - traj.back().y) * traj.back().y;
 
     double error = dot_product / (goal_length * traj_length);
 
-    if(error < -0.8){
-        return 0;
-    }
+   // if(error < -0.8){
+   //     return 0;
+   // }
 
     double error_angle = std::acos(error);
 
-    return to_goal_cost_gain * error_angle;
+    return to_goal_cost_gain *(M_PI -  error_angle);
 }
 
 //目的地までの距離を計算
@@ -224,7 +226,6 @@ void DWA::calc_final_input(State roomba, Speed& speed, Dynamic Window& dw, Goal 
             calc_trajectory(traj, roomba, i, center + j);
             to_goal_cost = calc_to_goal_cost(traj, goal, roomba);
 
-//mazical number, 3.0 needs altering to gain;
             goal_dist = dist_gain * calc_goal_dist(traj, goal);
             obstacle_cost = calc_obstacle_cost(roomba, traj);
             final_cost = to_goal_cost + goal_dist + speed_cost + obstacle_cost;
