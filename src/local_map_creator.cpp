@@ -25,6 +25,7 @@ void Local_Map_Creator::create_local_map()
 {
     row = (int)(height/resolution);
     column = (int)(width/resolution);
+    grid_map.clear();
     grid_map.resize(row,std::vector<int>(column,-1));
     for(int i = 0; i < number_of_laser; i++) convert_coordinate(i);
     convert_grid_map();
@@ -35,29 +36,45 @@ int Local_Map_Creator::get_radius(int n)
 {
     int radius;
     int radius_limit = (column/2)-1;
-    // double average_length = (scan_data.ranges[n]+scan_data.ranges[n+1]+scan_data.ranges[n+2]+scan_data.ranges[n+3])/4;
-    radius = (int)(scan_data.ranges[n]/resolution);
-    // std::cout<<"radius: "<<radius<<std::endl;
-    if(radius < radius_limit) return radius;
-    else return radius_limit;
+    double bar_limit = 0.25;
+    bool is_bar = true;
+    bool fliper = true;
+    int i= 0;
+    while(is_bar)
+    {
+        if(scan_data.ranges[n+i] > bar_limit)
+        {
+            radius = (int)(scan_data.ranges[n+i]/resolution);
+            is_bar = false;
+        }
+        if((n+i >= number_of_laser)||(n+i < 0)) fliper = !fliper;
+        if(fliper) i++;
+        else i--;
+    }
+    if(radius < radius_limit)
+    {
+        is_edge = false;
+        return radius;
+    }
+    else
+    {
+        is_edge = true;
+        return radius_limit;
+    }
 }
 
 void Local_Map_Creator::convert_coordinate(int i)
 {
     double theta = (i/4-135)*M_PI/180;
-    // std::cout<<"r,theta: "<<get_radius(i)<<","<<(i-45)<<std::endl;
     for(int r = 0; r < get_radius(i); r++)
     {
         grid_map[(int)(r*cos(theta)+row/2)][(int)(r*sin(theta)+column/2)] = 0;
-        // std::cout<<"i,j: "<<cos(theta)<<","<<sin(theta)<<std::endl;
     }
-    if(get_radius(i) >= radius_limit-1)
+    grid_map[(int)(get_radius(i)*cos(theta)+row/2)][(int)(get_radius(i)*sin(theta)+column/2)] = 100;
+
+    if(is_edge)
     {
-        grid_map[(int)(get_radius(i)*cos(theta)+row/2)][(int)(get_radius(i)*sin(theta)+column/2)] = 0;
-    }
-    else
-    {
-        grid_map[(int)(get_radius(i)*cos(theta)+row/2)][(int)(get_radius(i)*sin(theta)+column/2)] = 100;
+        grid_map[(int)(get_radius(i)*cos(theta)+row/2)][(int)(get_radius(i)*sin(theta)+column/2)] =0;
     }
 }
 
@@ -65,6 +82,7 @@ void Local_Map_Creator::convert_grid_map()
 {
     local_map.data.clear();
     local_map.header.frame_id = "local_map";
+    local_map.header.stamp = ros::Time::now();
     local_map.info.resolution = resolution;
     local_map.info.width = column;
     local_map.info.height = row;
@@ -81,12 +99,12 @@ void Local_Map_Creator::convert_grid_map()
 
 void Local_Map_Creator::process()
 {
-    // ros::Rate loop_rate(hz);
-    // while(ros::ok())
-    // {
+    ros::Rate loop_rate(hz);
+    while(ros::ok())
+    {
         ros::spin();
-    //     loop_rate.sleep();
-    // }
+        loop_rate.sleep();
+    }
 }
 
 int main (int argc, char **argv)

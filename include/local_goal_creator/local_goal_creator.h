@@ -30,6 +30,8 @@ private:
     geometry_msgs::PoseStamped current_pose;
     geometry_msgs::PoseStamped local_goal;
     unsigned int goal_number;
+    bool have_recieved_path;
+
 //visualization_msgs/Maker rvizに配信するとき色とかかたちとか変えられる
 };
 

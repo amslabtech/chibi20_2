@@ -1,0 +1,4 @@
+<!-- <?xml virsion="1.0"?> -->
+<launch>
+    <node pkg="chibi20_2" type="local_path_planner" name="local_path_planner" output="screen"/>
+</launch>
