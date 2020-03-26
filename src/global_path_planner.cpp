@@ -153,8 +153,8 @@ void A_Star_Planner::define_goal_grid()
     //goal_grid.x = 3150;
     //goal_grid.y = 3000;
     //###
-    goal_grid.x = landmark[checkpoint-1].x;
-    goal_grid.y = landmark[checkpoint-1].y;
+    goal_grid.x = landmark[checkpoint+1].x;
+    goal_grid.y = landmark[checkpoint+1].y;
     //１周するには何回かゴールを更新して１つのパスを作る必要がある。
     //全体的なスタートとゴールが一緒なためそのままやるとパスを引けない
     //ゴール設定方法を検討中
@@ -395,7 +395,7 @@ void A_Star_Planner::process()
             global_path.poses.clear();
             make_limit();
             expand_wall();
-            for(checkpoint = 9;checkpoint > 1;checkpoint--)
+            for(checkpoint = 1;checkpoint < 9;checkpoint++)
             {
                 waypoint_path.poses.clear();
                 waypoint_path_creator();
