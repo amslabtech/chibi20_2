@@ -36,7 +36,7 @@ int Local_Map_Creator::get_radius(int n)
 {
     int radius;
     int radius_limit = (column/2)-1;
-    double bar_limit = 0.25;
+    double bar_limit = 0.00;
     bool is_bar = true;
     bool fliper = true;
     int i= 0;
@@ -90,7 +90,7 @@ void Local_Map_Creator::convert_grid_map()
     local_map.info.origin.position.y = -1*(double)width/2;
     for(int i = 0; i < column; i++)
     {
-        for(int j = 0; j < row; j++)
+        for(int j = row-1; j > -1; j--)
         {
             local_map.data.push_back(grid_map[i][j]);
         }
