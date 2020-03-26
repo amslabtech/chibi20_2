@@ -6,7 +6,7 @@ Map_Maneger::Map_Maneger():private_nh("~")
    private_nh.param("hz",hz,{1});
    private_nh.param("row",row,{2000});
    private_nh.param("column",column,{2000});
-   private_nh.param("degree",degree,{-15});
+   private_nh.param("degree",degree,{165});
    // subscriber
    sub_map = nh.subscribe("map",10,&Map_Maneger::map_callback,this);
    sub_blocked_map = nh.subscribe("blocked_map",10,&Map_Maneger::blocked_map_callback,this);
