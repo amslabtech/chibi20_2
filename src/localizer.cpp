@@ -35,30 +35,37 @@ sensor_msgs::LaserScan laser;
 geometry_msgs::PoseStamped estimated_pose;
 geometry_msgs::PoseStamped current_pose;
 geometry_msgs::PoseStamped previous_pose;
-geometry_msgs::PoseArray poses;
+geometry_msgs::PoseArray poses;             //rviz用
 
 std::vector<Particle> particles;
 
-//パラメータ
-int N;               //Particleの数
-double INIT_X;        //初期位置x
-double INIT_Y;        //初期位置y
-double INIT_YAW;      //初期位置yaw
-double INIT_X_COV;    //初期分散x
-double INIT_Y_COV;    //初期分散y
-double INIT_YAW_COV;  //初期分散yaw
+//パラメータ(詳しくはlocalizer.yaml)
+int N;
+double INIT_X;
+double INIT_Y;
+double INIT_YAW;
+double INIT_X_COV;
+double INIT_Y_COV;
+double INIT_YAW_COV;
 double MAX_RANGE;
-int RANGE_STEP;         //尤度step
-double X_TH;          //xのしきい値
-double Y_TH;          //yのしきい値
-double YAW_TH;        //yawのしきい値
-double P_COV;
-double ALPHA_1;       //movenoise
+int RANGE_STEP;
+double X_COV_TH;
+double Y_COV_TH;
+double YAW_COV_TH;
+double ALPHA_1;
 double ALPHA_2;
 double ALPHA_3;
 double ALPHA_4;
 double ALPHA_SLOW;
 double ALPHA_FAST;
+double HIT_COV;
+double LAMBDA_SHORT;
+double Z_HIT;
+double Z_SHORT;
+double Z_MAX;
+double Z_RAND;
+double JUDGE_DISTANCE_VALUE;
+double JUDGE_ANGLE_VALUE;
 
 double x_cov   = 0.5;
 double y_cov   = 0.5;
@@ -144,7 +151,7 @@ double angle_diff(double a,double b)
         return d2;
 }
 
-//Range(particleの存在範囲)の更新
+//Range(particleの残存範囲)の更新
 double get_Range(double x,double y,double yaw)
 {
     int cx_0 , cy_0;
@@ -278,15 +285,23 @@ int main(int argc,char **argv)
     private_nh.getParam("INIT_YAW_COV",INIT_YAW_COV);
     private_nh.getParam("MAX_RANGE",MAX_RANGE);
     private_nh.getParam("RANGE_STEP",RANGE_STEP);
-    private_nh.getParam("X_TH",X_TH);
-    private_nh.getParam("Y_TH",Y_TH);
-    private_nh.getParam("P_COV",P_COV);
+    private_nh.getParam("X_COV_TH",X_COV_TH);
+    private_nh.getParam("Y_COV_TH",Y_COV_TH);
+    private_nh.getParam("YAW_COV_TH",YAW_COV_TH);
     private_nh.getParam("ALPHA_1",ALPHA_1);
     private_nh.getParam("ALPHA_2",ALPHA_2);
     private_nh.getParam("ALPHA_3",ALPHA_3);
     private_nh.getParam("ALPHA_4",ALPHA_4);
     private_nh.getParam("ALPHA_SLOW",ALPHA_SLOW);
     private_nh.getParam("ALPHA_FAST",ALPHA_FAST);
+    private_nh.getParam("HIT_COV",HIT_COV);
+    private_nh.getParam("LAMBDA_SHORT",LAMBDA_SHORT);
+    private_nh.getParam("Z_HIT",Z_HIT);
+    private_nh.getParam("Z_SHORT",Z_SHORT);
+    private_nh.getParam("Z_MAX",Z_MAX);
+    private_nh.getParam("Z_RAND",Z_RAND);
+    private_nh.getParam("JUDGE_DISTANCE_VALUE",JUDGE_DISTANCE_VALUE);
+    private_nh.getParam("JUDGE_ANGLE_VALUE",JUDGE_ANGLE_VALUE);
 
      //Subscriber
      ros::Subscriber map_sub = nh.subscribe("/fixed_map",100,map_callback);
@@ -333,6 +348,7 @@ int main(int argc,char **argv)
             current_pose.pose.position.y = transform.getOrigin().y();
             quaternionTFToMsg(transform.getRotation(),current_pose.pose.orientation);
 
+            //current_poseの表示
             std::cout << std::endl;
             ROS_INFO("CURRENT_POSE");
             std::cout << " current_x : " << current_pose.pose.position.x << std::endl;
@@ -341,7 +357,7 @@ int main(int argc,char **argv)
             std::cout << std::endl;
 
             //Particleをばらまく
-            if(x_cov < X_TH || y_cov < Y_TH /* || yaw_cov < YAW_TH */){
+            if(x_cov < X_COV_TH || y_cov < Y_COV_TH || yaw_cov < YAW_COV_TH ){
                 x_cov   = 0.3;
                 y_cov   = 0.3;
                 yaw_cov = 0.3;
@@ -349,7 +365,6 @@ int main(int argc,char **argv)
                 std::vector<Particle> set_particles;
                 for(int i = 0; i < N; i++){
                     Particle p;
-
                     p.p_init(estimated_pose.pose.position.x,estimated_pose.pose.position.y,get_Yaw(estimated_pose.pose.orientation),x_cov,y_cov,yaw_cov);
                     set_particles.push_back(p);
                 }
@@ -400,7 +415,7 @@ int main(int argc,char **argv)
 
             if(update_flag){
                 //Resampling
-                std::cout << "start resampling" << std::endl;
+                std::cout << "Start resampling" << std::endl;
                 std::uniform_real_distribution<> dist(0.0,1.0);
                 int index = (int)(dist(engine)*N);
                 double beta = 0.0;
@@ -435,19 +450,20 @@ int main(int argc,char **argv)
                 double estimated_y = 0.0;
                 double estimated_yaw = 0.0;
 
-                sort(new_particles.begin(),new_particles.end(),[](const Particle& x,const Particle& y) { return x.weight > y.weight; });
+                //尤度の高い順に並び替える
+                sort(new_particles.begin(),new_particles.end(),[](const Particle& a,const Particle& b) { return a.weight > b.weight; });
 
                 poses.poses.reserve(2000);
-                //resampling後のparticleの平均値を推定値とする
-                for(int i = 0; i < N/4; i++){
+                //resampling後の尤度の高い上位のparticleの平均値を推定値とする
+                for(int i = 0; i < N/2; i++){
                     estimated_x += new_particles[i].pose.pose.position.x;
                     estimated_y += new_particles[i].pose.pose.position.y;
                 }
 
                 estimated_yaw = get_Yaw(new_particles[0].pose.pose.orientation);
 
-                estimated_pose.pose.position.x = 4*estimated_x/N;
-                estimated_pose.pose.position.y = 4*estimated_y/N;
+                estimated_pose.pose.position.x = 2*estimated_x/N;
+                estimated_pose.pose.position.y = 2*estimated_y/N;
                 quaternionTFToMsg(tf::createQuaternionFromYaw(estimated_yaw),estimated_pose.pose.orientation);
 
                 double ave_x = 0.0;
@@ -478,17 +494,19 @@ int main(int argc,char **argv)
                 y_cov = sqrt(new_cov_y/N);
                 yaw_cov = sqrt(new_cov_yaw/N);
 
-                //値を返していない
+                //うまく作動していない気がする(作動したら上のやつ消す)
                 //create_new_cov(&x_cov,&y_cov,&yaw_cov);
             }
             update_flag = false;
 
         }
 
+        //create_new_covが作動しているか作動していないかの確認用
         std::cout << " x_cov : " << x_cov << std::endl;
         std::cout << " y_cov : " << y_cov << std::endl;
         std::cout << "yaw_cov: " << yaw_cov << std::endl;
 
+        //推定姿勢の出力
         std::cout << std::endl;
         ROS_INFO("ESTIMATED_POSE");
         std::cout << "estimated_pose.x  : " << estimated_pose.pose.position.x << std::endl;
@@ -565,7 +583,7 @@ void Particle::p_motion_update(geometry_msgs::PoseStamped current,geometry_msgs:
     angle_sum += fabs(dyaw);
 
     //更新するかしないかの判断
-    if(distance_sum > 0.15 || angle_sum > 0.15){
+    if(distance_sum > JUDGE_DISTANCE_VALUE || angle_sum > JUDGE_ANGLE_VALUE){
         distance_sum = 0.0;
         angle_sum = 0.0;
         update_flag = true;
@@ -617,14 +635,6 @@ void Particle::p_measurement_update()
     double range_diff = 0.0;
     double p_w = 0.0;
 
-    //z_hit + z_short +z_max + z_rand = 1;
-    double z_hit = 0.79;
-    double z_short = 0.07;
-    double z_max = 0.07;
-    double z_rand = 0.07;
-
-    double lambda_short = 0.1;
-
     //更新したら尤度を計算する
     for(int i = 0; i < (int)laser.ranges.size(); i += RANGE_STEP){
         angle = laser.angle_min + i*laser.angle_increment;
@@ -632,18 +642,14 @@ void Particle::p_measurement_update()
 
         range_diff = laser.ranges[i] - map_range;
 
-        /*---   テスト用にrange_diffを適当に定義(あとで消す) ---
-        range_diff = pow(pose.pose.position - 10,2) + pow(pose.pose.position.y -10);
-        */
-
         if(laser.ranges[i] < MAX_RANGE)
-            p_w += z_hit * exp(-range_diff*range_diff)/(2*P_COV*P_COV);
+            p_w += Z_HIT * exp(-range_diff*range_diff)/(2*HIT_COV*HIT_COV);
         if(range_diff < 0)
-            p_w += z_short * lambda_short * exp(-lambda_short*laser.ranges[i]);
+            p_w += Z_SHORT * LAMBDA_SHORT * exp(-LAMBDA_SHORT*laser.ranges[i]);
         if(laser.ranges[i] >= MAX_RANGE)
-            p_w += z_max;
+            p_w += Z_MAX;
         if(laser.ranges[i] < MAX_RANGE)
-            p_w += z_rand/MAX_RANGE;
+            p_w += Z_RAND/MAX_RANGE;
     }
     weight = p_w;
 }
