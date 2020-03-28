@@ -3,8 +3,8 @@
 Local_Goal_Creator::Local_Goal_Creator():private_nh("~")
 {
     //parameter
-    private_nh.param("hz",hz,{1});
-    private_nh.param("border_distance",border_distance,{3.0});
+    private_nh.param("hz",hz,{10});
+    private_nh.param("border_distance",border_distance,{1.5});
     //subscriber
     sub_global_path = nh.subscribe("global_path",10,&Local_Goal_Creator::global_path_callback,this);
     sub_current_pose = nh.subscribe("estimated_pose",10,&Local_Goal_Creator::current_pose_callback,this);
@@ -24,6 +24,7 @@ void Local_Goal_Creator::global_path_callback(const nav_msgs::Path::ConstPtr& ms
 void Local_Goal_Creator::current_pose_callback(const geometry_msgs::PoseStamped::ConstPtr& msg)
 {
     current_pose = *msg;
+    if(!have_recieved_pose) have_recieved_pose = true;
 }
 
 
@@ -31,9 +32,6 @@ void Local_Goal_Creator::select_next_goal()
 {
     double measure_distance = sqrt(pow(local_goal.pose.position.x-current_pose.pose.position.x,2)+pow(local_goal.pose.position.y-current_pose.pose.position.y,2));
     std::cout<<"distance: "<<measure_distance<<std::endl;
-    double theta;
-
-
     if(measure_distance < border_distance) goal_number += 60;
     if(global_path.poses.size() > goal_number) local_goal = global_path.poses[goal_number];
     else local_goal = global_path.poses[global_path.poses.size()-1];

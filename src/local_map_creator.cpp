@@ -10,9 +10,16 @@ Local_Map_Creator::Local_Map_Creator():private_nh("~")
 
     //subscriber
     sub_laser_scan = nh.subscribe("scan",10,&Local_Map_Creator::laser_scan_callback,this);
+    sub_current_pose = nh.subscribe("estimated_pose",10,&Local_Map_Creator::current_pose_callback,this);
     //publisher
     pub_local_map = nh.advertise<nav_msgs::OccupancyGrid>("local_map",1);
 }
+
+void Local_Map_Creator::current_pose_callback(const geometry_msgs::PoseStamped::ConstPtr& msg)
+{
+    current_pose = *msg;
+}
+
 
 void Local_Map_Creator::laser_scan_callback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
@@ -81,7 +88,7 @@ void Local_Map_Creator::convert_coordinate(int i)
 void Local_Map_Creator::convert_grid_map()
 {
     local_map.data.clear();
-    local_map.header.frame_id = "local_map";
+    local_map.header.frame_id = "map";
     local_map.header.stamp = ros::Time::now();
     local_map.info.resolution = resolution;
     local_map.info.width = column;
@@ -97,11 +104,26 @@ void Local_Map_Creator::convert_grid_map()
     }
 }
 
+void Local_Map_Creator::add_frame_local_map()
+{
+    tf2_ros::TransformBroadcaster tfb;
+    geometry_msgs::TransformStamped tf_local_map;
+    tf_local_map.header.frame_id = "map";
+    tf_local_map.child_frame_id = "local_map";
+    tf_local_map.transform.translation.x = current_pose.pose.position.x;
+    tf_local_map.transform.translation.y = current_pose.pose.position.y;
+    tf_local_map.transform.translation.z = 0;
+    tf_local_map.transform.rotation = current_pose.pose.orientation;
+    tf_local_map.header.stamp = ros::Time::now();
+    tfb.sendTransform(tf_local_map);
+}
+
 void Local_Map_Creator::process()
 {
     ros::Rate loop_rate(hz);
     while(ros::ok())
     {
+        add_frame_local_map();
         ros::spin();
         loop_rate.sleep();
     }

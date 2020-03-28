@@ -7,6 +7,7 @@
 #include "std_msgs/Bool.h"
 #include "roomba_500driver_meiji/RoombaCtrl.h"
 #include "nav_msgs/Path.h"
+#include "nav_msgs/Odometry.h"
 #include "tf/tf.h"
 
 class Dynamic_Window_Approch
@@ -20,6 +21,7 @@ private:
     void local_goal_callback(const geometry_msgs::PoseStamped::ConstPtr&);
     void way_blocked_callback(const std_msgs::Bool::ConstPtr&);
     void estimated_pose_callback(const geometry_msgs::PoseStamped::ConstPtr&);
+    void roomba_odometry_callback(const nav_msgs::Odometry::ConstPtr&);
     void create_dynamic_window();
         void spec_window();
         void reachable_window();
@@ -28,10 +30,13 @@ private:
         void create_virtual_path(double,double,int);
             geometry_msgs::PoseStamped simulate(double,double,double);
         void evaluation(const geometry_msgs::PoseStamped&,int,unsigned int);
-            double heading(const geometry_msgs::PoseStamped&);
-            double distance(const geometry_msgs::PoseStamped&);
+            double heading(const geometry_msgs::PoseStamped&,int,int);
+            double distance(const geometry_msgs::PoseStamped&,int,int);
             double velocity(const geometry_msgs::PoseStamped&,int,unsigned int);
+        void normalize_score(int);
      void decide_local_path();
+     //for debagging
+     void show_window();
 
     //parameter
     struct Component
@@ -54,6 +59,7 @@ private:
     double k_velocity;
     bool is_map_recieved = false;
     bool is_goal_recieved = false;
+    bool is_odometry_recieved = false;
 
     //member
     struct Considering_list
@@ -73,15 +79,18 @@ private:
     ros::Subscriber sub_local_goal;
     ros::Subscriber sub_estimated_pose;
     ros::Subscriber sub_way_blocked;
+    ros::Subscriber sub_roomba_odometry;
     nav_msgs::OccupancyGrid local_map;
     geometry_msgs::PoseStamped local_goal;
     std::vector<Component> window;
     geometry_msgs::PoseStamped current_pose;
-    double current_distance;
+    geometry_msgs::PoseStamped estimated_pose;
+    double current_distance = 5.0;
     geometry_msgs::PoseStamped past_pose;
     Component current_velocity;
     roomba_500driver_meiji::RoombaCtrl roomba_ctrl;
     std::vector<Considering_list> list;
+    ros::Publisher pub_virtual_path;
 
 };
 #endif//LOCAL_PATH_PLANNER
