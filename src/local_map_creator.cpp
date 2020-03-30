@@ -72,7 +72,7 @@ int Local_Map_Creator::get_radius(int n)
 
 void Local_Map_Creator::convert_coordinate(int i)
 {
-    double theta = (i/4-135)*M_PI/180;
+    double theta = (225-(i/4.0))*M_PI/180;
     for(int r = 0; r < get_radius(i); r++)
     {
         grid_map[(int)(r*cos(theta)+row/2)][(int)(r*sin(theta)+column/2)] = 0;
@@ -97,7 +97,7 @@ void Local_Map_Creator::convert_grid_map()
     local_map.info.origin.position.y = -1*(double)width/2;
     for(int i = 0; i < column; i++)
     {
-        for(int j = row-1; j > -1; j--)
+        for(int j = 0; j < row; j++)
         {
             local_map.data.push_back(grid_map[i][j]);
         }

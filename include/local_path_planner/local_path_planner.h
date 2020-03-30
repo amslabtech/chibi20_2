@@ -16,6 +16,21 @@ public:
     Dynamic_Window_Approch();
     void process();
 private:
+    struct Component
+    {
+        double linear;
+        double angular;
+    };
+    struct Considering_list
+    {
+        nav_msgs::Path virtual_path;
+        Component velocity;
+        double heading_score;
+        double distance_score;
+        double velocity_score;
+        double total_score;
+        bool is_obstacled;
+    };
     //method
     void local_map_callback(const nav_msgs::OccupancyGrid::ConstPtr&);
     void local_goal_callback(const geometry_msgs::PoseStamped::ConstPtr&);
@@ -28,22 +43,17 @@ private:
         void obstacle_window();
     void consider_local_path();
         void create_virtual_path(double,double,int);
-            geometry_msgs::PoseStamped simulate(double,double,double);
-        void evaluation(const geometry_msgs::PoseStamped&,int,unsigned int);
-            double heading(const geometry_msgs::PoseStamped&,int,int);
-            double distance(const geometry_msgs::PoseStamped&,int,int);
-            double velocity(const geometry_msgs::PoseStamped&,int,unsigned int);
-        void normalize_score(int);
-     void decide_local_path();
-     //for debagging
-     void show_window();
+            geometry_msgs::PoseStamped simulate(double,double,double,int);
+        void evaluation(int);
+            double heading(double,double,int);
+            double distance(double,double);
+    void eliminate_obstacle_path();
+         bool check_obstacle(int,int);
+    void decide_local_path();
+    //for debagging
+    void show_window();
 
     //parameter
-    struct Component
-    {
-        double linear;
-        double angular;
-    };
     int hz;
     double dt;//time step
     double dx;//linear step
@@ -57,21 +67,13 @@ private:
     double k_heading;
     double k_distance;
     double k_velocity;
+    double eliminate_length;
+    double pick_up_time;
     bool is_map_recieved = false;
     bool is_goal_recieved = false;
     bool is_odometry_recieved = false;
 
     //member
-    struct Considering_list
-    {
-        nav_msgs::Path virtual_path;
-        Component velocity;
-        double heading_score;
-        double distance_score;
-        double velocity_score;
-        double total_score;
-        bool is_obstacled;
-    };
     ros::NodeHandle nh;
     ros::NodeHandle private_nh;
     ros::Publisher pub_roomba_ctrl;
@@ -85,12 +87,14 @@ private:
     std::vector<Component> window;
     geometry_msgs::PoseStamped current_pose;
     geometry_msgs::PoseStamped estimated_pose;
-    double current_distance = 5.0;
     geometry_msgs::PoseStamped past_pose;
     Component current_velocity;
     roomba_500driver_meiji::RoombaCtrl roomba_ctrl;
     std::vector<Considering_list> list;
     ros::Publisher pub_virtual_path;
+    ros::Publisher pub_best_path;
+    ros::Publisher pub_eliminated_path;
+    std::vector<std::vector<int>> grid_map;
 
 };
 #endif//LOCAL_PATH_PLANNER
