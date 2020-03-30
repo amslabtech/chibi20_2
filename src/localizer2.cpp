@@ -1,5 +1,6 @@
 //
-//Coderview後,localizer.cppを改良(コアダンプする)
+//Coderview後,localizer.cppを改良(コアダンプは解消)
+//正しく位置推定できるかは未確認
 //
 #include "localizer/localizer.h"
 
@@ -21,13 +22,19 @@ Particle::Particle() :private_nh("~")
     private_nh.getParam("RANGE_STEP",RANGE_STEP);
     private_nh.getParam("X_COV_TH",X_COV_TH);
     private_nh.getParam("Y_COV_TH",Y_COV_TH);
-    private_nh.getParam("P_COV",P_COV);
-    private_nh.getParam("MOVE_NOISE_1",MOVE_NOISE_1);
-    private_nh.getParam("MOVE_NOISE_2",MOVE_NOISE_2);
-    private_nh.getParam("MOVE_NOISE_3",MOVE_NOISE_3);
-    private_nh.getParam("MOVE_NOISE_4",MOVE_NOISE_4);
+    private_nh.getParam("YAW_COV_TH",YAW_COV_TH);
+    private_nh.getParam("ALPHA_1",ALPHA_1);
+    private_nh.getParam("ALPHA_2",ALPHA_2);
+    private_nh.getParam("ALPHA_3",ALPHA_3);
+    private_nh.getParam("ALPHA_4",ALPHA_4);
     private_nh.getParam("ALPHA_SLOW",ALPHA_SLOW);
     private_nh.getParam("ALPHA_FAST",ALPHA_FAST);
+    private_nh.getParam("HIT_COV",HIT_COV);
+    private_nh.getParam("LAMBDA_SHORT",LAMBDA_SHORT);
+    private_nh.getParam("Z_HIT",Z_HIT);
+    private_nh.getParam("Z_SHORT",Z_SHORT);
+    private_nh.getParam("Z_MAX",Z_MAX);
+    private_nh.getParam("Z_RAND",Z_RAND);
     private_nh.getParam("JUDGE_DISTANCE_VALUE",JUDGE_DISTANCE_VALUE);
     private_nh.getParam("JUDGE_ANGLE_VALUE",JUDGE_ANGLE_VALUE);
 
@@ -37,16 +44,17 @@ Particle::Particle() :private_nh("~")
     private_nh.param("yaw_cov",yaw_cov,{0.5});
     private_nh.param("weight_slow",weight_slow,{0.0});
     private_nh.param("weight_fast",weight_fast,{0.0});
-    private_nh.param("have_map",have_map,{false});
-    private_nh.param("is_update",is_update,{false});
+    private_nh.param("get_map",get_map,{false});
+    private_nh.param("update_flag",update_flag,{false});
 
     //subscriber
-    ros::Subscriber map_sub = nh.subscribe("/fixed_map",100,&Particle::map_callback,this);
-    ros::Subscriber lsr_sub = nh.subscribe("/scan",100,&Particle::laser_callback,this);
-    ros::Subscriber odo_sub = nh.subscribe("/roomba/odometry",100,&Particle::odometry_callback,this);
+    map_sub = nh.subscribe("/fixed_map",100,&Particle::map_callback,this);
+    lsr_sub = nh.subscribe("/scan",100,&Particle::laser_callback,this);
+    odo_sub = nh.subscribe("/roomba/odometry",100,&Particle::odometry_callback,this);
 
     //Publisher
-    ros::Publisher estimated_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("estimated_pose",100);
+    estimated_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("estimated_pose",100);
+    estimated_poses_pub = nh.advertise<geometry_msgs::PoseArray>("estimated_poses",100);
 
     pose.header.frame_id = "map";
 
@@ -60,7 +68,7 @@ Particle::Particle() :private_nh("~")
 void Particle::p_init(double x,double y,double yaw,double cov_x,double cov_y,double cov_yaw)
 {
     //正規分布でParticleをばらまく
-    do{
+    //do{
         std::normal_distribution<> dist_x(x,cov_x);
         pose.pose.position.x = dist_x(engine);
 
@@ -69,14 +77,14 @@ void Particle::p_init(double x,double y,double yaw,double cov_x,double cov_y,dou
 
         std::normal_distribution<> dist_yaw(yaw,cov_yaw);
         quaternionTFToMsg(tf::createQuaternionFromYaw(dist_yaw(engine)),pose.pose.orientation);
-    }while(grid_data(pose.pose.position.x,pose.pose.position.y) != 0);
+    //}while(grid_data(pose.pose.position.x,pose.pose.position.y) != 0);
 }
 
 //Particleの動きを更新
 void Particle::p_motion_update(geometry_msgs::PoseStamped current,geometry_msgs::PoseStamped previous)
 {
-    static double distance_sum = 0.0;
-    static double angle_sum = 0.0;
+    double distance_sum = 0.0;
+    double angle_sum = 0.0;
 
     //current - previous (移動量)
     double dx   = current.pose.position.x - previous.pose.position.x;
@@ -86,10 +94,10 @@ void Particle::p_motion_update(geometry_msgs::PoseStamped current,geometry_msgs:
     distance_sum += sqrt(dx*dx + dy*dy);
     angle_sum += fabs(dyaw);
 
-    is_update = judge_update(distance_sum,angle_sum);
-    if(is_update){
+    if(distance_sum > JUDGE_DISTANCE_VALUE || angle_sum > JUDGE_ANGLE_VALUE){
         distance_sum = 0.0;
         angle_sum = 0.0;
+        update_flag = true;
     }
 
     //particleを移動
@@ -113,9 +121,9 @@ void Particle::p_move(double dx,double dy,double dyaw)
     double delta_rot1_noise = std::min(fabs(angle_diff(delta_rot1,0.0)),fabs(angle_diff(delta_rot1,M_PI)));
     double delta_rot2_noise = std::min(fabs(angle_diff(delta_rot2,0.0)),fabs(angle_diff(delta_rot2,M_PI)));
 
-    std::normal_distribution<> dist_rot1(0.0,(MOVE_NOISE_1*delta_rot1_noise*delta_rot1_noise - MOVE_NOISE_2*delta_trans*delta_trans));
-    std::normal_distribution<> dist_rot2(0.0,(MOVE_NOISE_1*delta_rot2_noise*delta_rot2_noise - MOVE_NOISE_2*delta_trans*delta_trans));
-    std::normal_distribution<> dist_trans(0.0,(MOVE_NOISE_3*delta_trans*delta_trans + MOVE_NOISE_4*delta_rot1_noise*delta_rot1_noise + MOVE_NOISE_4*delta_rot2_noise*delta_rot2_noise));
+    std::normal_distribution<> dist_rot1(0.0,(ALPHA_1*delta_rot1_noise*delta_rot1_noise - ALPHA_2*delta_trans*delta_trans));
+    std::normal_distribution<> dist_rot2(0.0,(ALPHA_1*delta_rot2_noise*delta_rot2_noise - ALPHA_2*delta_trans*delta_trans));
+    std::normal_distribution<> dist_trans(0.0,(ALPHA_3*delta_trans*delta_trans + ALPHA_4*delta_rot1_noise*delta_rot1_noise + ALPHA_4*delta_rot2_noise*delta_rot2_noise));
 
     double delta_rot1_hat  = angle_diff(delta_rot1,dist_rot1(engine));
     double delta_rot2_hat  = angle_diff(delta_rot2,dist_rot2(engine));
@@ -132,32 +140,42 @@ void Particle::p_measurement_update()
     double angle;
     double map_range;
     double range_diff = 0.0;
+    double p = 0.0;
 
     for(int i = 0; i < (int)laser.ranges.size(); i += RANGE_STEP){
         angle = laser.angle_min + i*laser.angle_increment;
         map_range = get_Range(pose.pose.position.x,pose.pose.position.y,get_Yaw(pose.pose.orientation)+ angle);
 
-        range_diff += pow((laser.ranges[i] - map_range),2);
-        weight = exp(-range_diff/(2*pow(P_COV,2)));
+        range_diff = laser.ranges[i] - map_range;
+        if(laser.ranges[i] < MAX_RANGE)
+            p += Z_HIT * exp(-range_diff*range_diff)/(2*HIT_COV*HIT_COV);
+        if(range_diff < 0)
+            p += Z_SHORT * LAMBDA_SHORT * exp(-LAMBDA_SHORT*laser.ranges[i]);
+        if(laser.ranges[i] >= MAX_RANGE)
+            p += Z_MAX;
+        if(laser.ranges[i] < MAX_RANGE)
+            p += Z_RAND/MAX_RANGE;
     }
+    weight = p;
 }
 
 //マップの受取とParticleの初期化
 void Particle::map_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 {
     map = *msg;
-    have_map = true;
+    get_map = true;
 
     std::cout << "Get a map" << std::endl;
 
+    std::vector<Particle> init_particles;
     for(int i = 0; i < N; i++){
         Particle p;
-
         p.p_init(INIT_X,INIT_Y,INIT_YAW,INIT_X_COV,INIT_Y_COV,INIT_YAW_COV);
-        //particlesに格納
-        particles.push_back(p);
+        poses.poses.push_back(p.pose.pose);
+        init_particles.push_back(p);
     }
-    std::cout << "finish mapstep" << std::endl;
+    particles = init_particles;
+    poses.header.frame_id = "map";
 }
 
 //レーザの受取
@@ -175,8 +193,8 @@ void Particle::odometry_callback(const nav_msgs::Odometry::ConstPtr& odo)
 //indexの算出
 int Particle::index(double x,double y)
 {
-    int index_x = floor(x - map.info.origin.position.x) / map.info.resolution;
-    int index_y = floor(y - map.info.origin.position.y) / map.info.resolution;
+    int index_x = floor((x - map.info.origin.position.x) / map.info.resolution);
+    int index_y = floor((y - map.info.origin.position.y) / map.info.resolution);
     return index_x + index_y*map.info.width;
 }
 
@@ -270,10 +288,10 @@ double Particle::get_Range(double x,double y,double yaw)
     }
 
     while(cx != (cx_1 + xstep)){
-        x += xstep;
+        cx += xstep;
         error += dy;
         if(2*error >= dx){
-            y += ystep;
+            cy += ystep;
             error -= dx;
         }
         if(judge){
@@ -289,16 +307,6 @@ double Particle::get_Range(double x,double y,double yaw)
     }
 
     return MAX_RANGE;
-}
-
-//更新するかしないかの判定
-bool Particle::judge_update(double distance_value,double angle_value)
-{
-    if(distance_value > JUDGE_DISTANCE_VALUE || angle_value > JUDGE_ANGLE_VALUE)
-        return true;
-    else
-        return false;
-
 }
 
 //新しい分散の算出
@@ -347,12 +355,14 @@ void Particle::process()
     quaternionTFToMsg(tf::createQuaternionFromYaw(0.0),current_pose.pose.orientation);
     previous_pose  = current_pose;
 
-    particles.reserve(1000);
+    particles.reserve(2000);
 
-    ros::Rate rate(10);
+    ros::Rate rate(Hz);
     while(ros::ok()){
-        if(have_map /* && !laser.ranges.empty() */){
+        if(get_map /* && !laser.ranges.empty() */){
+            ROS_INFO("Processing start!");
             estimated_pose.header.frame_id = "map";
+            poses.header.frame_id = "map";
 
             tf::StampedTransform transform;
             transform = tf::StampedTransform(tf::Transform(tf::createQuaternionFromYaw(0.0),tf::Vector3(0.0,0.0,0.0)),ros::Time::now(),"odom","base_link");
@@ -410,11 +420,11 @@ void Particle::process()
                 particles[i].weight /= weight_sum;
             }
 
-
             weight_average /= (double)N;
             if(weight_average ==  0 || std::isnan(weight_average)){
                 weight_average = 1 / (double)N;
-                weight_slow = weight_fast = weight_average;
+                weight_slow = weight_average;
+                weight_fast = weight_average;
             }
 
             if(weight_slow == 0.0){
@@ -431,8 +441,7 @@ void Particle::process()
                 weight_fast += ALPHA_FAST*(weight_average - weight_fast);
             }
 
-
-            if(is_update){
+            if(update_flag){
                 //Resampling
                 std::uniform_real_distribution<> dist(0.0,1.0);
                 int index = (int)(dist(engine)*N);
@@ -461,28 +470,61 @@ void Particle::process()
                         new_particles.push_back(p);
                     }
                 }
-
                 particles = new_particles;
 
-                create_new_cov(&x_cov,&y_cov,&yaw_cov);
+                double estimated_x   = 0.0;
+                double estimated_y   = 0.0;
+                double estimated_yaw = 0.0;
+
+                //尤度の高い順に並べる
+                sort(new_particles.begin(),new_particles.end(),[](const Particle& a,const Particle& b) { return a.weight > b.weight; });
+
+                poses.poses.reserve(2000);
+                //尤度の高い上位のparticleの平均値を推定位置とする
+                for(int i = 0; i < 0.5*N; i++){
+                    estimated_x += new_particles[i].pose.pose.position.x;
+                    estimated_y += new_particles[i].pose.pose.position.y;
+                }
+                estimated_yaw = get_Yaw(new_particles[0].pose.pose.orientation);
+
+                estimated_pose.pose.position.x = 2*estimated_x/N;
+                estimated_pose.pose.position.y = 2*estimated_y/N;
+                quaternionTFToMsg(tf::createQuaternionFromYaw(estimated_yaw),estimated_pose.pose.orientation);
+
+                 double ave_x = 0.0;
+                 double ave_y = 0.0;
+                 double ave_yaw = 0.0;
+                 for(int i = 0; i < N; i++){
+                     poses.poses[i] = particles[i].pose.pose;
+                     ave_x += particles[i].pose.pose.position.x/N;
+                     ave_y += particles[i].pose.pose.position.y/N;
+                     ave_yaw += get_Yaw(particles[i].pose.pose.orientation)/N;
+                 }
+
+                 double new_cov_x = 0.0;
+                 double new_cov_y = 0.0;
+                 double new_cov_yaw = 0.0;
+                 for(int i = 0; i < N; i++){
+                     new_cov_x += pow((particles[i].pose.pose.position.x - ave_x),2);
+                     new_cov_y += pow((particles[i].pose.pose.position.y - ave_y),2);
+                     new_cov_yaw += pow((get_Yaw(particles[i].pose.pose.orientation)-ave_yaw),2);
+                 }
+                 x_cov = sqrt(new_cov_x/N);
+                 y_cov = sqrt(new_cov_y/N);
+                 yaw_cov = sqrt(new_cov_yaw/N);
+
+                 //create_new_cov(&x_cov,&y_cov,&yaw_cov);
             }
-            is_update = false;
-
+            update_flag = false;
         }
-
-        int max_index = 0;
-        for(int i = 0; i < N; i++){
-            if(particles[i].weight > particles[max_index].weight)
-                max_index = i;
-        }
-
-        estimated_pose.pose = particles[max_index].pose.pose;
 
         std::cout << "estimated_pose.x  : " << estimated_pose.pose.position.x << std::endl;
         std::cout << "estimated_pose.y  : " << estimated_pose.pose.position.y << std::endl;
         std::cout << "estimated_pose.yaw: " << get_Yaw(estimated_pose.pose.orientation) << std::endl;
 
         estimated_pose_pub.publish(estimated_pose);
+        estimated_poses_pub.publish(poses);
+        ROS_INFO("Publish complete");
 
         try{
             tf::StampedTransform map_transform;

@@ -56,13 +56,18 @@ private:
     double X_COV_TH;
     double Y_COV_TH;
     double YAW_COV_TH;
-    double P_COV;
-    double MOVE_NOISE_1;
-    double MOVE_NOISE_2;
-    double MOVE_NOISE_3;
-    double MOVE_NOISE_4;
+    double ALPHA_1;
+    double ALPHA_2;
+    double ALPHA_3;
+    double ALPHA_4;
     double ALPHA_SLOW;
     double ALPHA_FAST;
+    double HIT_COV;
+    double LAMBDA_SHORT;
+    double Z_HIT;
+    double Z_SHORT;
+    double Z_MAX;
+    double Z_RAND;
     double JUDGE_DISTANCE_VALUE;
     double JUDGE_ANGLE_VALUE;
 
@@ -73,8 +78,8 @@ private:
     double weight_slow;
     double weight_fast;
 
-    bool have_map = false;      //mapを取得したかどうかの判定
-    bool is_update = false;     //更新するかどうかの判定
+    bool get_map = false;      //mapを取得したかどうかの判定
+    bool update_flag = false;     //更新するかどうかの判定
 
     std::vector<Particle> particles;
 
@@ -87,10 +92,12 @@ private:
     ros::Subscriber odo_sub;
 
     ros::Publisher estimated_pose_pub;
+    ros::Publisher estimated_poses_pub;
 
     geometry_msgs::PoseStamped estimated_pose;
     geometry_msgs::PoseStamped current_pose;
     geometry_msgs::PoseStamped previous_pose;
+    geometry_msgs::PoseArray poses;
     nav_msgs::Odometry odometry;
     nav_msgs::OccupancyGrid map;
     sensor_msgs::LaserScan laser;
