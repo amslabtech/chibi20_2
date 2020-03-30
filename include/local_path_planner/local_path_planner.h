@@ -63,11 +63,11 @@ private:
     double max_angular_velocity;
     double max_linear_acceleration;
     double max_angular_acceleration;
-    double sigma;
+    double sigma_linear;
+    double sigma_angular;
     double k_heading;
     double k_distance;
     double k_velocity;
-    double eliminate_length;
     double pick_up_time;
     bool is_map_recieved = false;
     bool is_goal_recieved = false;

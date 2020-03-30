@@ -7,16 +7,16 @@ Dynamic_Window_Approch::Dynamic_Window_Approch():private_nh("~")
     private_nh.param("max_angular_velocity",max_angular_velocity,{30*M_PI/180});//4.25
     private_nh.param("max_linear_acceleration",max_linear_acceleration,{0.1});
     private_nh.param("max_angular_acceleration",max_angular_acceleration,{30*M_PI/180});
-    private_nh.param("hz",hz,{1});
+    private_nh.param("hz",hz,{20});
     private_nh.param("dx",dx,{0.05});
     private_nh.param("da",da,{3.0*M_PI/180});
     private_nh.param("dt",dt,{0.25});
     private_nh.param("sim_time",sim_time,{5.0});
-    private_nh.param("sigma",sigma,{0.8});
-    private_nh.param("k_heading",k_heading,{1.0});
+    private_nh.param("sigma_velocity",sigma_linear,{0.5});
+    private_nh.param("sigma_angular",sigma_angular,{1.5});
+    private_nh.param("k_heading",k_heading,{2.0});
     private_nh.param("k_distance",k_distance,{1.0});
     private_nh.param("k_velocity",k_velocity,{1.0});
-    private_nh.param("eliminate_length",eliminate_length,{1.0});
     private_nh.param("pick_up_time",pick_up_time,{2.0});
 
     //subscriber
@@ -26,7 +26,7 @@ Dynamic_Window_Approch::Dynamic_Window_Approch():private_nh("~")
     sub_estimated_pose = nh.subscribe("estimated_pose",10,&Dynamic_Window_Approch::estimated_pose_callback,this);
     sub_roomba_odometry = nh.subscribe("/roomba/odometry",10,&Dynamic_Window_Approch::roomba_odometry_callback,this);
     //publisher
-    pub_roomba_ctrl = nh.advertise<roomba_500driver_meiji::RoombaCtrl>("roomba_ctrl",1);
+    pub_roomba_ctrl = nh.advertise<roomba_500driver_meiji::RoombaCtrl>("/roomba/control",1);
     pub_virtual_path = nh.advertise<nav_msgs::Path>("virtual_path",1);
     pub_best_path = nh.advertise<nav_msgs::Path>("best_path",1);
     pub_eliminated_path = nh.advertise<nav_msgs::Path>("eliminated_path",1);
@@ -257,10 +257,10 @@ void Dynamic_Window_Approch::decide_local_path()
     std::cout<<"number: "<<best_path_number<<" linear: "<<list[best_path_number].velocity.linear<<" angular: "<<list[best_path_number].velocity.angular*180/M_PI<<std::endl;
     roomba_500driver_meiji::RoombaCtrl movement;
     movement.mode = roomba_500driver_meiji::RoombaCtrl::DRIVE_DIRECT;
-    movement.cntl.linear.x = sigma*best_velocity.linear;
-    movement.cntl.angular.z = sigma*best_velocity.angular;
+    movement.cntl.linear.x = sigma_linear*best_velocity.linear;
+    movement.cntl.angular.z = sigma_angular*best_velocity.angular;
     std::cout<<"vl,va: "<<movement.cntl.linear.x<<" , "<<movement.cntl.angular.z<<std::endl;
-    pub_roomba_ctrl.publish(movement);
+    // pub_roomba_ctrl.publish(movement);
 }
 
 void Dynamic_Window_Approch::process()
