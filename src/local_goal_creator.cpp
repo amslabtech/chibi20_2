@@ -4,7 +4,7 @@ Local_Goal_Creator::Local_Goal_Creator():private_nh("~")
 {
     //parameter
     private_nh.param("hz",hz,{10});
-    private_nh.param("border_distance",border_distance,{0.5});
+    private_nh.param("border_distance",border_distance,{0.7});
     //subscriber
     sub_global_path = nh.subscribe("global_path",10,&Local_Goal_Creator::global_path_callback,this);
     sub_current_pose = nh.subscribe("estimated_pose",10,&Local_Goal_Creator::current_pose_callback,this);

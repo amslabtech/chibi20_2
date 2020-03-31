@@ -105,6 +105,7 @@ void Map_Maneger::fix_map()
 {
     move_map_parallel();
     turn_map();
+    repaint_map();
     fixed_map.info = original_map.info;
     for(int i = 0;i<column;i++)
     {
@@ -115,6 +116,83 @@ void Map_Maneger::fix_map()
     }
 }
 
+void Map_Maneger::repaint_map()
+{
+    int start_point_x = 1880;
+    int start_point_y = 2308;
+    int end_point_x = 2124;
+    int end_point_y = 2348;//上の水平通路の定義
+    for(int i = start_point_x+1; i < end_point_x; i++)
+    {
+        for(int j = start_point_y+1; j < end_point_y; j++) grid_map[i][j] = 0;
+    }
+    int x2 = 1960;
+    int x3 = 2047;
+    int x4 = 2100;
+    int x5 = 2117;
+    int y2 = 2226;
+    int y3 = 2290;
+    int y4 = 2441;
+    for(int i = start_point_x; i < x2; i++) grid_map[i][end_point_y] =100;//同通路の左上壁
+    for(int i = x3; i < x4; i++) grid_map[i][end_point_y] =100;//右上壁
+    for(int i = x5; i <= end_point_x; i++) grid_map[i][end_point_y] =100;//右上壁
+    for(int i = start_point_x; i < x2; i++) grid_map[i][start_point_y] =100;//同通路の左下壁
+    for(int i = x3; i <= end_point_x; i++) grid_map[i][start_point_y] = 100;//右下壁
+    for(int j = y2; j <= start_point_y; j++) grid_map[start_point_x][j] = 100;//左垂直通路右壁
+    for(int j = y2; j <= start_point_y; j++) grid_map[x2][j] = 100;//中央垂直通路左壁
+    for(int j = y2; j <= start_point_y; j++) grid_map[x3][j] = 100;//中央垂直通路右壁
+    for(int i = x2+1; i < x3; i++)
+    {
+        for(int j = end_point_y; j < y4; j++) grid_map[i][j] = 0;//上玄関前
+    }
+    for(int i = start_point_x+1; i < x2; i++)
+    {
+        for(int j = y2+1; j < start_point_y; j++) grid_map[i][j] = -1;//左上穴拡張
+    }
+    for(int i = x3+1; i < x5; i++)
+    {
+        for(int j = y2+1; j < start_point_y; j++) grid_map[i][j] = -1;//右上穴拡張
+    }
+    int x6 = 2053;
+    int x7 = 2111;
+    for(int i = x6+1; i < x7; i++)
+    {
+        for(int j = y3+1; j < start_point_y; j++) grid_map[i][j] = 0;//エレベータ部分
+    }
+    for(int i = x6; i <= x7; i++) grid_map[i][y3] = 100;//エレベータ縁
+    for(int i = x6+1; i < x7; i++) grid_map[i][start_point_y] = 0;//エレベータ縁
+    for(int j = y3; j <= start_point_y; j++) grid_map[x6][j] = 100;//エレベータ縁
+    for(int j = y3; j <= start_point_y; j++) grid_map[x7][j] = 100;//エレベータ縁
+    int x8 = 1929;
+    int y5 = 2317;
+    int y6 = 2300;
+    for(int i = x8+1; i < x2; i++)
+    {
+        for(int j = y6+1; j < y5; j++) grid_map[i][j] = -1;//ゴミ箱部分
+    }
+    for(int j = start_point_y; j <= y5; j++) grid_map[x8][j] = 100;//ゴミ箱縁
+    for(int j = y6; j <= y5; j++) grid_map[x2][j] = 100;//ゴミ箱と階段の縁
+    for(int i = x8; i <= x2; i++) grid_map[i][y6] =100;//ゴミ箱縁
+    for(int i = x8; i <= x2; i++) grid_map[i][y5] =100;
+    int x9 = 1925;
+    int x10 = 1954;
+    int y7 = 2276;
+    int y8 = 2262;
+    for(int i = x9+1; i < x2; i++)
+    {
+        for(int j = y7+1; j < y6; j++) grid_map[i][j] = 0;//階段
+    }
+    for(int i = x9+1; i < x10; i++)
+    {
+        for(int j = y8+1; j <= y7; j++) grid_map[i][j] = 0;//階段
+    }
+    for(int j = y8; j <= y6; j++) grid_map[x9][j] = 100;//階段縁
+    for(int j = y8; j <= y7; j++) grid_map[x10][j] = 100;//階段縁
+    for(int i = x9; i <= x2; i++) grid_map[i][y6] = 100;//階段縁
+    for(int i = x10; i <= x2; i++) grid_map[i][y7] = 100;//階段縁
+    for(int i = x9; i <= x10; i++) grid_map[i][y8] =100;//階段縁
+
+}
 void Map_Maneger::process()
 {
     ros::Rate loop_rate(hz);
