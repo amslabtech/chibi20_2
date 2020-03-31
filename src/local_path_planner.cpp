@@ -12,11 +12,11 @@ Dynamic_Window_Approch::Dynamic_Window_Approch():private_nh("~")
     private_nh.param("da",da,{5.0*M_PI/180});
     private_nh.param("dt",dt,{0.25});
     private_nh.param("sim_time",sim_time,{5.0});
-    private_nh.param("sigma_velocity",sigma_linear,{0.7});
-    private_nh.param("sigma_angular",sigma_angular,{1.5});
+    private_nh.param("sigma_velocity",sigma_linear,{1.0});
+    private_nh.param("sigma_angular",sigma_angular,{2.0});
     private_nh.param("k_heading",k_heading,{2.0});
     private_nh.param("k_distance",k_distance,{1.0});
-    private_nh.param("k_velocity",k_velocity,{0.5});
+    private_nh.param("k_velocity",k_velocity,{0.8});
     private_nh.param("pick_up_time",pick_up_time,{4.0});
 
     //subscriber
@@ -165,7 +165,7 @@ double Dynamic_Window_Approch::distance(double x,double y)
 {
     double virtual_distance = sqrt(pow(x-local_goal.pose.position.x,2)+pow(y-local_goal.pose.position.y,2));
     double current_distance = sqrt(pow(estimated_pose.pose.position.x-local_goal.pose.position.x,2)+pow(estimated_pose.pose.position.y-local_goal.pose.position.y,2));
-    return (1-(virtual_distance/10.0))*current_distance/1.7;
+    return (1-(virtual_distance/10.0))*current_distance/1.5;
 }
 
 void Dynamic_Window_Approch::consider_local_path()
@@ -235,11 +235,11 @@ bool Dynamic_Window_Approch::check_obstacle(int x,int y)
         for(int j = y-obstacle_range; j <= y+obstacle_range; j++)
         {
             if(grid_map[i][j] == 100) return true;
-            geometry_msgs::PointStamped obstacled;
-            obstacled.point.x = i*local_map.info.resolution-50;
-            obstacled.point.y = j*local_map.info.resolution-50;
-            obstacled.header.frame_id = "map";
-            pub_obstacled_grid.publish(obstacled);
+            // geometry_msgs::PointStamped obstacled;
+            // obstacled.point.x = i*local_map.info.resolution-50;
+            // obstacled.point.y = j*local_map.info.resolution-50;
+            // obstacled.header.frame_id = "map";
+            // pub_obstacled_grid.publish(obstacled);
         }
     }
     return false;

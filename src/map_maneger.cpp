@@ -191,7 +191,36 @@ void Map_Maneger::repaint_map()
     for(int i = x9; i <= x2; i++) grid_map[i][y6] = 100;//階段縁
     for(int i = x10; i <= x2; i++) grid_map[i][y7] = 100;//階段縁
     for(int i = x9; i <= x10; i++) grid_map[i][y8] =100;//階段縁
-
+    int x11 = 1840;
+    int x12 = 1875;
+    // int x13 = 1957;
+    // int x14 = 2042;
+    int x15 = 1963;
+    int x16 = 2079;
+    int y9 = 1524;
+    int y10 = 1646;
+    int y11 = 1683;
+    int y12 = 2345;
+    for(int i = x11; i < x12; i++)
+    {
+        for(int j = y10; j < y12; j++) grid_map[i][j] = 0;//左垂直通路
+    }
+    for(int i = x11; i < x16+8; i++)
+    {
+        for(int j = y10; j < y11; j++) grid_map[i][j] = 0;//下水平通路
+    }
+    for(int i = x15; i < x16; i++)
+    {
+        for(int j = y9; j < y10; j++) grid_map[i][j] = 0;//下玄関
+    }
+    int x17 = 2132;
+    int x18 = 2159;
+    int y13 = 1633;
+    int y14 = 2343;
+    for(int i = x17; i < x18; i++)
+    {
+        for(int j = y13; j < y14; j++) grid_map[i][j] = 0;//右垂直通路
+    }
 }
 void Map_Maneger::process()
 {
