@@ -275,7 +275,7 @@ void Dynamic_Window_Approch::decide_local_path()
         movement.cntl.angular.z = 0.2;
         std::cout<<"no_path"<<std::endl;
     }
-    // pub_roomba_ctrl.publish(movement);
+    pub_roomba_ctrl.publish(movement);
 }
 
 void Dynamic_Window_Approch::process()
