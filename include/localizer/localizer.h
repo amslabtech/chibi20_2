@@ -20,17 +20,17 @@ class Particle
 {
 public:
     Particle();
-    void p_init(double,double,double,double,double,double);
-    void p_motion_update(geometry_msgs::PoseStamped,geometry_msgs::PoseStamped);
-    void p_measurement_update();
-    void p_move(double,double,double);
     void process();
-
     geometry_msgs::PoseStamped pose;
     double weight;
 
 private:
     //method
+    void p_init(double,double,double,double,double,double);
+    void p_motion_update(geometry_msgs::PoseStamped,geometry_msgs::PoseStamped);
+    void p_measurement_update();
+    void p_move(double,double,double);
+
     void map_callback(const nav_msgs::OccupancyGrid::ConstPtr&);
     void laser_callback(const sensor_msgs::LaserScan::ConstPtr&);
     void odometry_callback(const nav_msgs::Odometry::ConstPtr&);
