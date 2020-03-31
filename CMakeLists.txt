@@ -140,7 +140,7 @@ include
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
  add_executable(roomba_controller src/roomba_controller.cpp)
-#add_executable(DWA src/DWA.cpp)
+#add_executable(DW src/DWA.cpp)
 #add_executable(move src/move.cpp)
 #add_executable(laser src/laser.cpp)
 #add_executable(global_path_tester src/global_path_tester.cpp)

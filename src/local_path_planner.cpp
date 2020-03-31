@@ -10,14 +10,14 @@ Dynamic_Window_Approch::Dynamic_Window_Approch():private_nh("~")
     private_nh.param("hz",hz,{10});
     private_nh.param("dx",dx,{0.05});
     private_nh.param("da",da,{5.0*M_PI/180});
-    private_nh.param("dt",dt,{0.25});
-    private_nh.param("sim_time",sim_time,{5.0});
+    private_nh.param("dt",dt,{0.50});
+    private_nh.param("sim_time",sim_time,{10.0});
     private_nh.param("sigma_velocity",sigma_linear,{1.0});
     private_nh.param("sigma_angular",sigma_angular,{2.0});
     private_nh.param("k_heading",k_heading,{2.0});
     private_nh.param("k_distance",k_distance,{1.0});
     private_nh.param("k_velocity",k_velocity,{0.8});
-    private_nh.param("pick_up_time",pick_up_time,{4.0});
+    private_nh.param("pick_up_time",pick_up_time,{7.0});
 
     //subscriber
     sub_local_map = nh.subscribe("local_map",10,&Dynamic_Window_Approch::local_map_callback,this);
@@ -165,7 +165,9 @@ double Dynamic_Window_Approch::distance(double x,double y)
 {
     double virtual_distance = sqrt(pow(x-local_goal.pose.position.x,2)+pow(y-local_goal.pose.position.y,2));
     double current_distance = sqrt(pow(estimated_pose.pose.position.x-local_goal.pose.position.x,2)+pow(estimated_pose.pose.position.y-local_goal.pose.position.y,2));
-    return (1-(virtual_distance/10.0))*current_distance/1.5;
+    double score =  (1-(virtual_distance/10.0));
+    if(score >= 0) return score;
+    else return 0;
 }
 
 void Dynamic_Window_Approch::consider_local_path()

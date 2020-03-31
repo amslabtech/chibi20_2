@@ -4,7 +4,7 @@ Local_Goal_Creator::Local_Goal_Creator():private_nh("~")
 {
     //parameter
     private_nh.param("hz",hz,{10});
-    private_nh.param("border_distance",border_distance,{0.5});
+    private_nh.param("border_distance",border_distance,{1.0});
     //subscriber
     sub_global_path = nh.subscribe("global_path",10,&Local_Goal_Creator::global_path_callback,this);
     sub_current_pose = nh.subscribe("estimated_pose",10,&Local_Goal_Creator::current_pose_callback,this);
@@ -32,7 +32,7 @@ void Local_Goal_Creator::select_next_goal()
 {
     double measure_distance = sqrt(pow(local_goal.pose.position.x-current_pose.pose.position.x,2)+pow(local_goal.pose.position.y-current_pose.pose.position.y,2));
     std::cout<<"distance: "<<measure_distance<<std::endl;
-    if(measure_distance < border_distance) goal_number += 20;
+    if(measure_distance < border_distance) goal_number += 5;
     if(global_path.poses.size() > goal_number) local_goal = global_path.poses[goal_number];
     else local_goal = global_path.poses[global_path.poses.size()-1];
 }
