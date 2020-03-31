@@ -32,7 +32,7 @@ void Local_Map_Creator::create_local_map()
 {
     row = (int)(height/resolution);
     column = (int)(width/resolution);
-    grid_map.clear();
+    // grid_map.clear();
     grid_map.resize(row,std::vector<int>(column,-1));
     for(int i = 0; i < number_of_laser; i++) convert_coordinate(i);
     convert_grid_map();

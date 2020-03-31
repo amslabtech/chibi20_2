@@ -5,11 +5,11 @@ Dynamic_Window_Approch::Dynamic_Window_Approch():private_nh("~")
     //parameter
     private_nh.param("max_linear_velocity",max_linear_velocity,{0.5});
     private_nh.param("max_angular_velocity",max_angular_velocity,{30*M_PI/180});//4.25
-    private_nh.param("max_linear_acceleration",max_linear_acceleration,{0.1});
+    private_nh.param("max_linear_acceleration",max_linear_acceleration,{0.05});
     private_nh.param("max_angular_acceleration",max_angular_acceleration,{30*M_PI/180});
-    private_nh.param("hz",hz,{20});
+    private_nh.param("hz",hz,{10});
     private_nh.param("dx",dx,{0.05});
-    private_nh.param("da",da,{3.0*M_PI/180});
+    private_nh.param("da",da,{5.0*M_PI/180});
     private_nh.param("dt",dt,{0.25});
     private_nh.param("sim_time",sim_time,{5.0});
     private_nh.param("sigma_velocity",sigma_linear,{0.5});
@@ -17,7 +17,7 @@ Dynamic_Window_Approch::Dynamic_Window_Approch():private_nh("~")
     private_nh.param("k_heading",k_heading,{2.0});
     private_nh.param("k_distance",k_distance,{1.0});
     private_nh.param("k_velocity",k_velocity,{1.0});
-    private_nh.param("pick_up_time",pick_up_time,{2.0});
+    private_nh.param("pick_up_time",pick_up_time,{4.0});
 
     //subscriber
     sub_local_map = nh.subscribe("local_map",10,&Dynamic_Window_Approch::local_map_callback,this);
@@ -30,6 +30,7 @@ Dynamic_Window_Approch::Dynamic_Window_Approch():private_nh("~")
     pub_virtual_path = nh.advertise<nav_msgs::Path>("virtual_path",1);
     pub_best_path = nh.advertise<nav_msgs::Path>("best_path",1);
     pub_eliminated_path = nh.advertise<nav_msgs::Path>("eliminated_path",1);
+    pub_obstacled_grid = nh.advertise<geometry_msgs::PointStamped>("obstacled_grid",1);
 }
 
 void Dynamic_Window_Approch::roomba_odometry_callback(const nav_msgs::Odometry::ConstPtr& msg)
@@ -164,7 +165,7 @@ double Dynamic_Window_Approch::distance(double x,double y)
 {
     double virtual_distance = sqrt(pow(x-local_goal.pose.position.x,2)+pow(y-local_goal.pose.position.y,2));
     double current_distance = sqrt(pow(estimated_pose.pose.position.x-local_goal.pose.position.x,2)+pow(estimated_pose.pose.position.y-local_goal.pose.position.y,2));
-    return (1-(virtual_distance/10.0))*current_distance/4.5;
+    return (1-(virtual_distance/10.0))*current_distance/1.5;
 }
 
 void Dynamic_Window_Approch::consider_local_path()
@@ -234,6 +235,11 @@ bool Dynamic_Window_Approch::check_obstacle(int x,int y)
         for(int j = y-obstacle_range; j <= y+obstacle_range; j++)
         {
             if(grid_map[i][j] == 100) return true;
+            geometry_msgs::PointStamped obstacled;
+            obstacled.point.x = i*local_map.info.resolution-50;
+            obstacled.point.y = j*local_map.info.resolution-50;
+            obstacled.header.frame_id = "map";
+            pub_obstacled_grid.publish(obstacled);
         }
     }
     return false;
@@ -252,14 +258,23 @@ void Dynamic_Window_Approch::decide_local_path()
         }
     }
     Component best_velocity = list[best_path_number].velocity;
-    if(best_path_number > 0) pub_best_path.publish(list[best_path_number].virtual_path);
-    std::cout<<"best_score: "<<best_score<<std::endl;
-    std::cout<<"number: "<<best_path_number<<" linear: "<<list[best_path_number].velocity.linear<<" angular: "<<list[best_path_number].velocity.angular*180/M_PI<<std::endl;
     roomba_500driver_meiji::RoombaCtrl movement;
     movement.mode = roomba_500driver_meiji::RoombaCtrl::DRIVE_DIRECT;
-    movement.cntl.linear.x = sigma_linear*best_velocity.linear;
-    movement.cntl.angular.z = sigma_angular*best_velocity.angular;
-    std::cout<<"vl,va: "<<movement.cntl.linear.x<<" , "<<movement.cntl.angular.z<<std::endl;
+    if(best_path_number >= 0)
+    {
+        pub_best_path.publish(list[best_path_number].virtual_path);
+        std::cout<<"best_score: "<<best_score<<std::endl;
+        std::cout<<"number: "<<best_path_number<<" linear: "<<list[best_path_number].velocity.linear<<" angular: "<<list[best_path_number].velocity.angular*180/M_PI<<std::endl;
+        movement.cntl.linear.x = sigma_linear*best_velocity.linear;
+        movement.cntl.angular.z = sigma_angular*best_velocity.angular;
+        std::cout<<"vl,va: "<<movement.cntl.linear.x<<" , "<<movement.cntl.angular.z<<std::endl;
+    }
+    else
+    {
+        movement.cntl.linear.x = 0.0;
+        movement.cntl.angular.z = 0.2;
+        std::cout<<"no_path"<<std::endl;
+    }
     // pub_roomba_ctrl.publish(movement);
 }
 

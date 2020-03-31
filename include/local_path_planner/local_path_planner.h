@@ -94,6 +94,7 @@ private:
     ros::Publisher pub_virtual_path;
     ros::Publisher pub_best_path;
     ros::Publisher pub_eliminated_path;
+    ros::Publisher pub_obstacled_grid;
     std::vector<std::vector<int>> grid_map;
 
 };
