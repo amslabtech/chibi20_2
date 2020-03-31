@@ -66,6 +66,7 @@ double Z_MAX;
 double Z_RAND;
 double JUDGE_DISTANCE_VALUE;
 double JUDGE_ANGLE_VALUE;
+double SELECTION_RATIO;
 
 double x_cov   = 0.5;
 double y_cov   = 0.5;
@@ -302,6 +303,7 @@ int main(int argc,char **argv)
     private_nh.getParam("Z_RAND",Z_RAND);
     private_nh.getParam("JUDGE_DISTANCE_VALUE",JUDGE_DISTANCE_VALUE);
     private_nh.getParam("JUDGE_ANGLE_VALUE",JUDGE_ANGLE_VALUE);
+    private_nh.getParam("SELECTION_RATIO",SELECTION_RATIO);
 
      //Subscriber
      ros::Subscriber map_sub = nh.subscribe("/fixed_map",100,map_callback);
@@ -347,7 +349,7 @@ int main(int argc,char **argv)
             current_pose.pose.position.x = transform.getOrigin().x();
             current_pose.pose.position.y = transform.getOrigin().y();
             quaternionTFToMsg(transform.getRotation(),current_pose.pose.orientation);
-
+            /*
             //current_poseの表示
             std::cout << std::endl;
             ROS_INFO("CURRENT_POSE");
@@ -355,8 +357,9 @@ int main(int argc,char **argv)
             std::cout << " current_y : " << current_pose.pose.position.y << std::endl;
             std::cout << "current_yaw: " << get_Yaw(current_pose.pose.orientation) << std::endl;
             std::cout << std::endl;
+            */
 
-            //Particleをばらまく
+            //密集していたら新たにParticleをばらまく
             if(x_cov < X_COV_TH || y_cov < Y_COV_TH || yaw_cov < YAW_COV_TH ){
                 x_cov   = 0.3;
                 y_cov   = 0.3;
@@ -455,15 +458,16 @@ int main(int argc,char **argv)
 
                 poses.poses.reserve(2000);
                 //resampling後の尤度の高い上位のparticleの平均値を推定値とする
-                for(int i = 0; i < N/2; i++){
+                double selected_N = (int)(SELECTION_RATIO*N);
+                for(int i = 0; i < selected_N; i++){
                     estimated_x += new_particles[i].pose.pose.position.x;
                     estimated_y += new_particles[i].pose.pose.position.y;
                 }
 
                 estimated_yaw = get_Yaw(new_particles[0].pose.pose.orientation);
 
-                estimated_pose.pose.position.x = 2*estimated_x/N;
-                estimated_pose.pose.position.y = 2*estimated_y/N;
+                estimated_pose.pose.position.x = estimated_x/selected_N;
+                estimated_pose.pose.position.y = estimated_y/selected_N;
                 quaternionTFToMsg(tf::createQuaternionFromYaw(estimated_yaw),estimated_pose.pose.orientation);
 
                 double ave_x = 0.0;
@@ -556,7 +560,7 @@ Particle::Particle()
 void Particle::p_init(double x,double y,double yaw,double cov_x,double cov_y,double cov_yaw)
 {
     //正規分布でParticleをばらまく
-    //do{
+    do{
         std::normal_distribution<> dist_x(x,cov_x);
         pose.pose.position.x = dist_x(engine);
 
@@ -565,7 +569,7 @@ void Particle::p_init(double x,double y,double yaw,double cov_x,double cov_y,dou
 
         std::normal_distribution<> dist_yaw(yaw,cov_yaw);
         quaternionTFToMsg(tf::createQuaternionFromYaw(dist_yaw(engine)),pose.pose.orientation);
-    //}while(grid_data(pose.pose.position.x,pose.pose.position.y) != 0);
+    }while(grid_data(pose.pose.position.x,pose.pose.position.y) != 0);
 }
 
 

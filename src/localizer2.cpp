@@ -48,7 +48,7 @@ Particle::Particle() :private_nh("~")
     private_nh.param("update_flag",update_flag,{false});
 
     //subscriber
-    map_sub = nh.subscribe("/fixed_map",100,&Particle::map_callback,this);
+    map_sub = nh.subscribe("/map",100,&Particle::map_callback,this);
     lsr_sub = nh.subscribe("/scan",100,&Particle::laser_callback,this);
     odo_sub = nh.subscribe("/roomba/odometry",100,&Particle::odometry_callback,this);
 
@@ -69,14 +69,14 @@ void Particle::p_init(double x,double y,double yaw,double cov_x,double cov_y,dou
 {
     //正規分布でParticleをばらまく
     //do{
-        std::normal_distribution<> dist_x(x,cov_x);
-        pose.pose.position.x = dist_x(engine);
+    std::normal_distribution<> dist_x(x,cov_x);
+    pose.pose.position.x = dist_x(engine);
 
-        std::normal_distribution<> dist_y(y,cov_y);
-        pose.pose.position.y = dist_y(engine);
+    std::normal_distribution<> dist_y(y,cov_y);
+    pose.pose.position.y = dist_y(engine);
 
-        std::normal_distribution<> dist_yaw(yaw,cov_yaw);
-        quaternionTFToMsg(tf::createQuaternionFromYaw(dist_yaw(engine)),pose.pose.orientation);
+    std::normal_distribution<> dist_yaw(yaw,cov_yaw);
+    quaternionTFToMsg(tf::createQuaternionFromYaw(dist_yaw(engine)),pose.pose.orientation);
     //}while(grid_data(pose.pose.position.x,pose.pose.position.y) != 0);
 }
 
@@ -156,7 +156,14 @@ void Particle::p_measurement_update()
         if(laser.ranges[i] < MAX_RANGE)
             p += Z_RAND/MAX_RANGE;
     }
+
     weight = p;
+    /*
+    //適当に定義
+    range_diff = pow(pose.pose.position.x - current_pose.pose.position.x,2) + pow(pose.pose.position.y - current_pose.pose.position.y,2);
+
+    weight = exp(-range_diff*range_diff)/(2*HIT_COV*HIT_COV);
+    */
 }
 
 //マップの受取とParticleの初期化
@@ -376,10 +383,18 @@ void Particle::process()
                 ros::Duration(1.0).sleep();
             }
 
+
             //current_poseへ格納
             current_pose.pose.position.x = transform.getOrigin().x();
             current_pose.pose.position.y = transform.getOrigin().y();
             quaternionTFToMsg(transform.getRotation(),current_pose.pose.orientation);
+
+            /*
+            //適当にcurrent_poseを定義
+            current_pose.pose.position.x = 10;
+            current_pose.pose.position.y = 10;
+            quaternionTFToMsg(tf::createQuaternionFromYaw(0.0),current_pose.pose.orientation);
+            */
 
             //Particleをばらまく
             if(x_cov < X_COV_TH || y_cov < Y_COV_TH || yaw_cov < YAW_COV_TH){
@@ -396,7 +411,6 @@ void Particle::process()
                 }
                 particles = set_particles;
             }
-
 
             //Particleの動きを更新
             for(int i = 0; i < N; i++){
@@ -514,10 +528,15 @@ void Particle::process()
                  yaw_cov = sqrt(new_cov_yaw/N);
 
                  //create_new_cov(&x_cov,&y_cov,&yaw_cov);
+                 std::cout << std::endl;
+                 std::cout << " x_cov : " << x_cov << std::endl;
+                 std::cout << " y_cov : " << y_cov << std::endl;
+                 std::cout << "yaw_cov: " << yaw_cov << std::endl;
+                 std::cout << std::endl;
             }
             update_flag = false;
         }
-
+        ROS_INFO("ESTIMATED_POSE");
         std::cout << "estimated_pose.x  : " << estimated_pose.pose.position.x << std::endl;
         std::cout << "estimated_pose.y  : " << estimated_pose.pose.position.y << std::endl;
         std::cout << "estimated_pose.yaw: " << get_Yaw(estimated_pose.pose.orientation) << std::endl;
