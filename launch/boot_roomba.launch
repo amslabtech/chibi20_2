@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+
+<launch>
+    <node name="roomba_500driver_meiji" pkg="roomba_500driver_meiji" type="main500" output="screen">
+        <param name="serial_port" value="/dev/ttyUSB0"/>
+        <param name="publish_intensity" value="true"/>
+        <param name="publish_multiecho" value="false"/>
+    </node>
+
+    <node name="urg_node" pkg="urg_node" type="urg_node" output="screen">
+        <param name="serial_port" value="/dev/ttyACM0"/>
+        <param name="frame_id" value="laser"/>
+        <param name="publish_intensity" value="true"/>
+        <param name="publish_multiecho" value="false"/>
+    </node>
+</launch>

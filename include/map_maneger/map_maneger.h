@@ -24,6 +24,7 @@ private:
     void set_grid_map_parametor();
     void move_map_parallel();
     void turn_map();
+    void repaint_map();
 
 
     //parameter
