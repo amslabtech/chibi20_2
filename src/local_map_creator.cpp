@@ -6,7 +6,7 @@ Local_Map_Creator::Local_Map_Creator():private_nh("~")
     private_nh.param("width",width,{5});
     private_nh.param("height",height,{5});
     private_nh.param("resolution",resolution,{0.05});
-    private_nh.param("radius_limit",radius_limit,{99});
+    private_nh.param("radius_limit",radius_limit,{49});
 
     //subscriber
     sub_laser_scan = nh.subscribe("scan",10,&Local_Map_Creator::laser_scan_callback,this);
@@ -32,32 +32,75 @@ void Local_Map_Creator::create_local_map()
 {
     row = (int)(height/resolution);
     column = (int)(width/resolution);
-    // grid_map.clear();
+    grid_map.clear();
     grid_map.resize(row,std::vector<int>(column,-1));
     for(int i = 0; i < number_of_laser; i++) convert_coordinate(i);
     convert_grid_map();
     pub_local_map.publish(local_map);
 }
 
-int Local_Map_Creator::get_radius(int n)
+// int Local_Map_Creator::get_radius(int n)//一定距離内のセンサーデータカット
+// {
+//     int radius;
+//     int radius_limit = (column/2)-1;
+//     double bar_limit = 0.00;
+//     bool is_bar = true;
+//     bool fliper = true;
+//     int i= 0;
+//     while(is_bar)
+//     {
+//         if(scan_data.ranges[n+i] > bar_limit)
+//         {
+//             radius = (int)(scan_data.ranges[n+i]/resolution);
+//             is_bar = false;
+//         }
+//         if((n+i >= number_of_laser)||(n+i < 0)) fliper = !fliper;
+//         if(fliper) i++;
+//         else i--;
+//     }
+//     if(radius < radius_limit)
+//     {
+//         is_edge = false;
+//         return radius;
+//     }
+//     else
+//     {
+//         is_edge = true;
+//         return radius_limit;
+//     }
+// }
+
+int Local_Map_Creator::get_radius(int n)//柱のある角度のセンサーデータカット
 {
-    int radius;
+    int radius = 0;
     int radius_limit = (column/2)-1;
-    double bar_limit = 0.00;
-    bool is_bar = true;
-    bool fliper = true;
-    int i= 0;
-    while(is_bar)
+    radius = (int)(scan_data.ranges[n]/resolution);
+    if(316 <= n)//右前の柱
     {
-        if(scan_data.ranges[n+i] > bar_limit)
-        {
-            radius = (int)(scan_data.ranges[n+i]/resolution);
-            is_bar = false;
-        }
-        if((n+i >= number_of_laser)||(n+i < 0)) fliper = !fliper;
-        if(fliper) i++;
-        else i--;
+        if(n <= 323) radius = (int)(scan_data.ranges[314]/resolution);
+        else if(n <= 332) radius = (int)(scan_data.ranges[334]/resolution);
     }
+
+    if(764 <= n)//左前の柱
+    {
+        if(n <= 780) radius = (int)(scan_data.ranges[758]/resolution);
+        else if(n <= 798) radius = (int)(scan_data.ranges[806]/resolution);
+    }
+
+    if(28 <= n)//右後の柱
+    {
+        if(n <= 48) radius = (int)(scan_data.ranges[26]/resolution);
+        else if(n <= 68) radius = (int)(scan_data.ranges[70]/resolution);
+    }
+
+    if(1040 <= n)//左後の柱
+    {
+        if(n <= 1056) radius = (int)(scan_data.ranges[1038]/resolution);
+        else if(n <= 1074) radius = (int)(scan_data.ranges[1078]/resolution);
+    }
+
+    if(radius < 5) radius = radius_limit;
+
     if(radius < radius_limit)
     {
         is_edge = false;

@@ -12,12 +12,32 @@
 
     <node pkg="chibi20_2" type="map_maneger" name="map_maneger" output="screen"/>
 
-    <node pkg="chibi20_2" type="localizer" name="localizer" output="screen">
+    <node pkg="chibi20_2" type="localizer" name="localizer" >
         <rosparam file="$(find chibi20_2)/config/param/localizer.yaml" command="load" />
     </node>
 
     <node pkg="chibi20_2" type="local_goal_creator" name="local_goal_creator" output="screen"/>
 
     <node pkg="chibi20_2" type="local_map_creator" name="local_map_creator" output="screen"/>
+
+    <node pkg="chibi20_2" type="local_path_planner" name="local_path_planner" output="screen">
+        <param name="hz" value="10" type="int"/>
+        <param name="max_linear_velocity" value="0.5" type="double"/>
+        <param name="max_angular_velocity" value="0.5236" type="double"/>
+        <param name="max_linear_acceleration" value="0.05" type="double"/>
+        <param name="max_angular_acceleration" value="0.5236" type="double"/>
+        <param name="dx" value="0.05" type="double"/>
+        <param name="da" value="0.0872665" type="double"/>
+        <param name="dt" value="0.25" type="double"/>
+        <param name="sim_time" value="7.0" type="double"/>
+        <param name="sigma_velocity" value="1.8" type="double"/>
+        <param name="sigma_angular" value="4.0" type="double"/>
+        <param name="k_heading" value="1.3" type="double"/>
+        <param name="k_distance" value="1.0" type="double"/>
+        <param name="k_velocity" value="1.0" type="double"/>
+        <param name="pick_up_time" value="3.0" type="double"/>
+        <param name="search_range_time" value="6.0" type="double"/>
+    </node>
+
 
 </launch>

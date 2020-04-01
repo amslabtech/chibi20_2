@@ -48,7 +48,7 @@ private:
             double heading(double,double,int);
             double distance(double,double);
     void eliminate_obstacle_path();
-         bool check_obstacle(int,int);
+         bool check_obstacle(int,int,int);
     void decide_local_path();
     //for debagging
     void show_window();
@@ -69,6 +69,7 @@ private:
     double k_distance;
     double k_velocity;
     double pick_up_time;
+    double search_range_time;
     bool is_map_recieved = false;
     bool is_goal_recieved = false;
     bool is_odometry_recieved = false;

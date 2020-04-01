@@ -5,19 +5,20 @@ Dynamic_Window_Approch::Dynamic_Window_Approch():private_nh("~")
     //parameter
     private_nh.param("max_linear_velocity",max_linear_velocity,{0.5});
     private_nh.param("max_angular_velocity",max_angular_velocity,{30*M_PI/180});//4.25
-    private_nh.param("max_linear_acceleration",max_linear_acceleration,{0.05});
+    private_nh.param("max_linear_acceleration",max_linear_acceleration,{0.02});
     private_nh.param("max_angular_acceleration",max_angular_acceleration,{30*M_PI/180});
     private_nh.param("hz",hz,{10});
     private_nh.param("dx",dx,{0.05});
     private_nh.param("da",da,{5.0*M_PI/180});
     private_nh.param("dt",dt,{0.25});
-    private_nh.param("sim_time",sim_time,{5.0});
-    private_nh.param("sigma_velocity",sigma_linear,{1.0});
+    private_nh.param("sim_time",sim_time,{7.0});
+    private_nh.param("sigma_velocity",sigma_linear,{2.0});
     private_nh.param("sigma_angular",sigma_angular,{2.0});
-    private_nh.param("k_heading",k_heading,{1.0});
-    private_nh.param("k_distance",k_distance,{1.0});
+    private_nh.param("k_heading",k_heading,{0.5});
+    private_nh.param("k_distance",k_distance,{0.7});
     private_nh.param("k_velocity",k_velocity,{1.0});
     private_nh.param("pick_up_time",pick_up_time,{4.0});
+    private_nh.param("search_range_time",search_range_time,{7.0});
 
     //subscriber
     sub_local_map = nh.subscribe("local_map",10,&Dynamic_Window_Approch::local_map_callback,this);
@@ -38,7 +39,7 @@ void Dynamic_Window_Approch::roomba_odometry_callback(const nav_msgs::Odometry::
     current_pose.pose = msg->pose.pose;
     if(!is_odometry_recieved) past_pose = current_pose;
     current_velocity.linear = sqrt(pow(current_pose.pose.position.x - past_pose.pose.position.x,2) + pow(current_pose.pose.position.y - past_pose.pose.position.y,2));
-    current_velocity.angular = tf::getYaw(current_pose.pose.orientation) - tf::getYaw(past_pose.pose.orientation);
+    current_velocity.angular = (tf::getYaw(current_pose.pose.orientation) - tf::getYaw(past_pose.pose.orientation));
     past_pose = current_pose;
     is_odometry_recieved = true;
 }
@@ -200,14 +201,15 @@ void Dynamic_Window_Approch::consider_local_path()
 
 void Dynamic_Window_Approch::eliminate_obstacle_path()
 {
-    int row = (int)(local_map.info.height/local_map.info.resolution);
-    int column = (int)(local_map.info.width/local_map.info.resolution);
+    int row = local_map.info.height;
+    int column = local_map.info.width;
+    grid_map.clear();
     grid_map.resize(row,std::vector<int>(column));
     for(int i = 0; i < row; i++)
     {
         for(int j = 0; j < column; j++)
         {
-            grid_map[i][j] = local_map.data[j*row+i];
+            grid_map[i][j] = local_map.data[j*column+i];
         }
     }
     for(int i = 0; i < (int)list.size(); i++)
@@ -215,10 +217,10 @@ void Dynamic_Window_Approch::eliminate_obstacle_path()
         list[i].is_obstacled = false;
         for(int j = 0; j < (int)list[i].virtual_path.poses.size(); j++)
         {
-            // std::cout<<"i,j: "<<i<<" , "<<j<<std::endl;
             int x = (int)((list[i].virtual_path.poses[j].pose.position.x/local_map.info.resolution)+row/2);
             int y = (int)((list[i].virtual_path.poses[j].pose.position.y/local_map.info.resolution)+column/2);
-            if((j < (pick_up_time+1)/dt) && (!list[i].is_obstacled)) list[i].is_obstacled = check_obstacle(x,y);
+            // std::cout<<"x,y: "<<x<<" , "<<y<<std::endl;
+            if((j < (search_range_time)/dt) && (!list[i].is_obstacled)) list[i].is_obstacled = check_obstacle(x,y,j);
         }
 
         if(list[i].is_obstacled)
@@ -229,20 +231,25 @@ void Dynamic_Window_Approch::eliminate_obstacle_path()
     }
 }
 
-bool Dynamic_Window_Approch::check_obstacle(int x,int y)
+bool Dynamic_Window_Approch::check_obstacle(int x,int y,int j)
 {
     int obstacle_range = 4;
+    if( j < pick_up_time/(2*dt)) obstacle_range = 2;
     // std::cout<<"x,y,range: "<<x<<" , "<<y<<" , "<<obstacle_range<<std::endl;
     for(int i = x-obstacle_range; i <=  x+obstacle_range; i++)
     {
         for(int j = y-obstacle_range; j <= y+obstacle_range; j++)
         {
-            if(grid_map[i][j] == 100) return true;
-            // geometry_msgs::PointStamped obstacled;
-            // obstacled.point.x = i*local_map.info.resolution-50;
-            // obstacled.point.y = j*local_map.info.resolution-50;
-            // obstacled.header.frame_id = "map";
-            // pub_obstacled_grid.publish(obstacled);
+            if(grid_map[i][j] == 100)
+            {
+                // std::cout<<"x,y: "<<x<<" , "<<y<<std::endl;
+                return true;
+            }
+            geometry_msgs::PointStamped obstacled;
+            obstacled.point.x = i*local_map.info.resolution-50;
+            obstacled.point.y = j*local_map.info.resolution-50;
+            obstacled.header.frame_id = "map";
+            pub_obstacled_grid.publish(obstacled);
         }
     }
     return false;
@@ -252,7 +259,7 @@ void Dynamic_Window_Approch::decide_local_path()
 {
     int best_path_number = -1;
     double best_score = -1.0;
-    for(int i = 0; i < list.size(); i++)
+    for(int i = 0; i < (int)list.size(); i++)
     {
         if((list[i].total_score > best_score) && (!list[i].is_obstacled))
         {
@@ -267,7 +274,7 @@ void Dynamic_Window_Approch::decide_local_path()
     {
         pub_best_path.publish(list[best_path_number].virtual_path);
         std::cout<<"best_score: "<<best_score<<std::endl;
-        std::cout<<"number: "<<best_path_number<<" linear: "<<list[best_path_number].velocity.linear<<" angular: "<<list[best_path_number].velocity.angular*180/M_PI<<std::endl;
+        std::cout<<" linear: "<<list[best_path_number].velocity.linear<<" angular: "<<list[best_path_number].velocity.angular*180/M_PI<<std::endl;
         movement.cntl.linear.x = sigma_linear*best_velocity.linear;
         movement.cntl.angular.z = sigma_angular*best_velocity.angular;
         std::cout<<"vl,va: "<<movement.cntl.linear.x<<" , "<<movement.cntl.angular.z<<std::endl;
