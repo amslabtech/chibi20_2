@@ -35,16 +35,21 @@ private:
     void laser_callback(const sensor_msgs::LaserScan::ConstPtr&);
     void odometry_callback(const nav_msgs::Odometry::ConstPtr&);
 
-    int index(double,double);                   //indexの計算
-    int grid_data(double,double);               //Griddataの取得
-    double get_Yaw(geometry_msgs::Quaternion);  //Yaw取得
-    double angle_diff(double,double);           //角度差の算出
-    double get_Range(double,double,double);     //Rangeの更新
-    bool judge_update(double,double);           //更新するかしないかの判断
-    void create_new_cov(double*,double*,double*);
+    int index(double,double);                       //indexの計算
+    int grid_data(double,double);                   //Griddataの取得
+    double get_Yaw(geometry_msgs::Quaternion);      //Yaw取得
+    double angle_diff(double,double);               //角度差の算出
+    double get_Range(double,double,double);         //Rangeの更新
+
+    void p_spread(double*,double*,double*);         //particleを散布し,分散を再設定
+    void move_process();                            //particleの移動処理
+    void measurement_process(int*);                 //particleの尤度処理
+    void resampling_process(int);                   //resampling処理
+    void estimated_pose_process();                  //推定位置の算出
+    void create_new_cov(double*,double*,double*);   //新たな分散を算出
 
     //parameter
-    int N;                  //Particleの数
+    int N;
     double INIT_X;
     double INIT_Y;
     double INIT_YAW;
@@ -70,6 +75,7 @@ private:
     double Z_RAND;
     double JUDGE_DISTANCE_VALUE;
     double JUDGE_ANGLE_VALUE;
+    double SELECTION_RATIO;
 
     int Hz;
     double x_cov;
@@ -82,6 +88,7 @@ private:
     bool update_flag = false;     //更新するかどうかの判定
 
     std::vector<Particle> particles;
+    std::vector<Particle> sort_particles;
 
     //member
     ros::NodeHandle nh;
