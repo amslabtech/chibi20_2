@@ -48,7 +48,7 @@ Particle::Particle() :private_nh("~")
     private_nh.param("update_flag",update_flag,{false});
 
     //subscriber
-    map_sub = nh.subscribe("/map",100,&Particle::map_callback,this);
+    map_sub = nh.subscribe("/fixed_map",100,&Particle::map_callback,this);
     lsr_sub = nh.subscribe("/scan",100,&Particle::laser_callback,this);
     odo_sub = nh.subscribe("/roomba/odometry",100,&Particle::odometry_callback,this);
 
@@ -172,7 +172,7 @@ void Particle::map_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
     map = *msg;
     get_map = true;
 
-    std::cout << "Get a map" << std::endl;
+    ROS_INFO("Get a Map");
 
     std::vector<Particle> init_particles;
     for(int i = 0; i < N; i++){
@@ -571,7 +571,7 @@ void Particle::process()
 int main(int argc,char **argv)
 {
     ros::init(argc,argv,"localizer2");
-    ROS_INFO("Start Localizer\n");
+    ROS_INFO("Start Localizer");
     Particle particle;
     particle.process();
     return 0;

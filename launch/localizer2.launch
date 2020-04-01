@@ -9,4 +9,6 @@
         <rosparam file="$(find chibi20_2)/config/param/localizer.yaml" command="load" />
     </node>
 
+    <node pkg="chibi20_2" type="map_maneger" name="map_maneger" output="screen" />
+
 </launch>
