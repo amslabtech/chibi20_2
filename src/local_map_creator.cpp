@@ -32,7 +32,7 @@ void Local_Map_Creator::create_local_map()
 {
     row = (int)(height/resolution);
     column = (int)(width/resolution);
-    grid_map.clear();
+    // grid_map.clear();
     grid_map.resize(row,std::vector<int>(column,-1));
     for(int i = 0; i < number_of_laser; i++) convert_coordinate(i);
     convert_grid_map();
@@ -99,7 +99,7 @@ int Local_Map_Creator::get_radius(int n)//柱のある角度のセンサーデ�
         else if(n <= 1074) radius = (int)(scan_data.ranges[1078]/resolution);
     }
 
-    if(radius < 5) radius = radius_limit;
+    if(radius < 3) radius = radius_limit;
 
     if(radius < radius_limit)
     {
@@ -149,16 +149,16 @@ void Local_Map_Creator::convert_grid_map()
 
 void Local_Map_Creator::add_frame_local_map()
 {
-    tf2_ros::TransformBroadcaster tfb;
-    geometry_msgs::TransformStamped tf_local_map;
-    tf_local_map.header.frame_id = "map";
-    tf_local_map.child_frame_id = "local_map";
-    tf_local_map.transform.translation.x = current_pose.pose.position.x;
-    tf_local_map.transform.translation.y = current_pose.pose.position.y;
-    tf_local_map.transform.translation.z = 0;
-    tf_local_map.transform.rotation = current_pose.pose.orientation;
-    tf_local_map.header.stamp = ros::Time::now();
-    tfb.sendTransform(tf_local_map);
+    // tf2_ros::TransformBroadcaster tfb;
+    // geometry_msgs::TransformStamped tf_local_map;
+    // tf_local_map.header.frame_id = "map";
+    // tf_local_map.child_frame_id = "local_map";
+    // tf_local_map.transform.translation.x = current_pose.pose.position.x;
+    // tf_local_map.transform.translation.y = current_pose.pose.position.y;
+    // tf_local_map.transform.translation.z = 0;
+    // tf_local_map.transform.rotation = current_pose.pose.orientation;
+    // tf_local_map.header.stamp = ros::Time::now();
+    // tfb.sendTransform(tf_local_map);
 }
 
 void Local_Map_Creator::process()

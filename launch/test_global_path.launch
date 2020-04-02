@@ -24,7 +24,7 @@
 
     <node pkg="chibi20_2" type="map_maneger" name="map_maneger" output="screen"/>
 
-    <node pkg="chibi20_2" type="localizer" name="localizer" output="screen"/>
+    <node pkg="chibi20_2" type="localizer" name="localizer" output="screen">
         <rosparam file="$(find chibi20_2)/config/param/localizer.yaml" command="load" />
     </node>
 
@@ -43,9 +43,9 @@
         <param name="dt" value="0.50" type="double"/>
         <param name="sim_time" value="6.0" type="double"/>
         <param name="sigma_velocity" value="1.5" type="double"/>
-        <param name="sigma_angular" value="2.6" type="double"/>
+        <param name="sigma_angular" value="2.4" type="double"/>
         <param name="k_heading" value="1.25" type="double"/>
-        <param name="k_distance" value="1.3" type="double"/>
+        <param name="k_distance" value="1.4" type="double"/>
         <param name="k_velocity" value="1.0" type="double"/>
         <param name="pick_up_time" value="4.0" type="double"/>
         <param name="search_range_time" value="6.0" type="double"/>

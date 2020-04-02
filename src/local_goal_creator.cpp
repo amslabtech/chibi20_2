@@ -32,7 +32,7 @@ void Local_Goal_Creator::select_next_goal()
 {
     double measure_distance = sqrt(pow(local_goal.pose.position.x-current_pose.pose.position.x,2)+pow(local_goal.pose.position.y-current_pose.pose.position.y,2));
     std::cout<<"distance: "<<measure_distance<<std::endl;
-    if(measure_distance < border_distance) goal_number += 5;
+    if(measure_distance < border_distance) goal_number += 60;
     if(global_path.poses.size() > goal_number) local_goal = global_path.poses[goal_number];
     else local_goal = global_path.poses[global_path.poses.size()-1];
 }
