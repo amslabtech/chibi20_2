@@ -442,7 +442,7 @@ int main(int argc,char **argv)
                     }
                     else{
                         Particle p;
-                        p.p_init(estimated_pose.pose.position.x,estimated_pose.pose.position.y,get_Yaw(estimated_pose.pose.orientation),INIT_X,INIT_Y,INIT_YAW);
+                        p.p_init(estimated_pose.pose.position.x,estimated_pose.pose.position.y,get_Yaw(estimated_pose.pose.orientation),INIT_X_COV,INIT_Y_COV,INIT_YAW_COV);
                         new_particles.push_back(p);
                     }
                 }

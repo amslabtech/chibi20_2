@@ -37,11 +37,14 @@ Dynamic_Window_Approch::Dynamic_Window_Approch():private_nh("~")
 void Dynamic_Window_Approch::roomba_odometry_callback(const nav_msgs::Odometry::ConstPtr& msg)
 {
     current_pose.pose = msg->pose.pose;
-    if(!is_odometry_recieved) past_pose = current_pose;
+    if(!is_odometry_recieved)
+    {
+        past_pose = current_pose;
+        is_odometry_recieved = true;
+    }
     current_velocity.linear = sqrt(pow(current_pose.pose.position.x - past_pose.pose.position.x,2) + pow(current_pose.pose.position.y - past_pose.pose.position.y,2));
     current_velocity.angular = (tf::getYaw(current_pose.pose.orientation) - tf::getYaw(past_pose.pose.orientation));
     past_pose = current_pose;
-    is_odometry_recieved = true;
 }
 
 void Dynamic_Window_Approch::local_map_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
@@ -234,7 +237,7 @@ void Dynamic_Window_Approch::eliminate_obstacle_path()
 bool Dynamic_Window_Approch::check_obstacle(int x,int y,int j)
 {
     int obstacle_range = 4;
-    if( j < pick_up_time/(2*dt)) obstacle_range = 2;
+    if( j < pick_up_time/(2*dt)) obstacle_range = 3;
     // std::cout<<"x,y,range: "<<x<<" , "<<y<<" , "<<obstacle_range<<std::endl;
     for(int i = x-obstacle_range; i <=  x+obstacle_range; i++)
     {
