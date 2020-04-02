@@ -99,7 +99,7 @@ int Local_Map_Creator::get_radius(int n)//柱のある角度のセンサーデ�
         else if(n <= 1074) radius = (int)(scan_data.ranges[1078]/resolution);
     }
 
-    if(radius < 3) radius = radius_limit;
+    // if(radius < 3) radius = radius_limit;
 
     if(radius < radius_limit)
     {
@@ -166,7 +166,7 @@ void Local_Map_Creator::process()
     ros::Rate loop_rate(hz);
     while(ros::ok())
     {
-        add_frame_local_map();
+        // add_frame_local_map();
         ros::spin();
         loop_rate.sleep();
     }
