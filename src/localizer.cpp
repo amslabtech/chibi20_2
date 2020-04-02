@@ -21,6 +21,7 @@ class Particle
 public:
     Particle();
     void p_init(double x,double y,double yaw,double x_cov,double y_cov,double yaw_cov);
+    void p_init_spread();
     void p_motion_update(geometry_msgs::PoseStamped,geometry_msgs::PoseStamped);
     void p_measurement_update();
     void p_move(double dx,double dy,double dyaw);
@@ -88,7 +89,7 @@ void map_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
     map = *msg;
     get_map = true;
 
-    std::cout << "Get a map" << std::endl;
+    ROS_INFO("Recieved fixed_map from Map_Manager");
 
     std::vector<Particle> init_particles;
     for(int i = 0; i < N; i++){
@@ -314,7 +315,7 @@ int main(int argc,char **argv)
     ros::Publisher estimated_pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/estimated_pose",100);
     ros::Publisher estimated_poses_pub = nh.advertise<geometry_msgs::PoseArray>("/estimated_poses",100);
 
-    particles.reserve(2000);
+    //particles.reserve(2000);  #コアダンプ対策
 
     tf::TransformBroadcaster broadcaster;
     tf::TransformListener listener;
@@ -349,15 +350,6 @@ int main(int argc,char **argv)
             current_pose.pose.position.x = transform.getOrigin().x();
             current_pose.pose.position.y = transform.getOrigin().y();
             quaternionTFToMsg(transform.getRotation(),current_pose.pose.orientation);
-            /*
-            //current_poseの表示
-            std::cout << std::endl;
-            ROS_INFO("CURRENT_POSE");
-            std::cout << " current_x : " << current_pose.pose.position.x << std::endl;
-            std::cout << " current_y : " << current_pose.pose.position.y << std::endl;
-            std::cout << "current_yaw: " << get_Yaw(current_pose.pose.orientation) << std::endl;
-            std::cout << std::endl;
-            */
 
             //密集していたら新たにParticleをばらまく
             if(x_cov < X_COV_TH || y_cov < Y_COV_TH || yaw_cov < YAW_COV_TH ){
@@ -456,7 +448,7 @@ int main(int argc,char **argv)
                 //尤度の高い順に並び替える
                 sort(new_particles.begin(),new_particles.end(),[](const Particle& a,const Particle& b) { return a.weight > b.weight; });
 
-                poses.poses.reserve(2000);
+                //poses.poses.reserve(2000);    #コアダンプ対策
                 //resampling後の尤度の高い上位のparticleの平均値を推定値とする
                 double selected_N = (int)(SELECTION_RATIO*N);
                 for(int i = 0; i < selected_N; i++){
@@ -505,13 +497,14 @@ int main(int argc,char **argv)
 
         }
 
+        /*
         //create_new_covが作動しているか作動していないかの確認用
         std::cout << " x_cov : " << x_cov << std::endl;
         std::cout << " y_cov : " << y_cov << std::endl;
         std::cout << "yaw_cov: " << yaw_cov << std::endl;
+        */
 
-        //推定姿勢の出力
-        std::cout << std::endl;
+        //推定姿勢の出力(screen)
         ROS_INFO("ESTIMATED_POSE");
         std::cout << "estimated_pose.x  : " << estimated_pose.pose.position.x << std::endl;
         std::cout << "estimated_pose.y  : " << estimated_pose.pose.position.y << std::endl;
@@ -555,7 +548,6 @@ Particle::Particle()
     weight = 1 / (double)N;
 }
 
-
 //Particleの初期化
 void Particle::p_init(double x,double y,double yaw,double cov_x,double cov_y,double cov_yaw)
 {
@@ -572,6 +564,19 @@ void Particle::p_init(double x,double y,double yaw,double cov_x,double cov_y,dou
     }while(grid_data(pose.pose.position.x,pose.pose.position.y) != 0);
 }
 
+/*
+//ParticleをMap全体に広げる
+void Particle::p_init_spread()
+{
+    std::uniform_real_distribution<> dist(0.0,1.0);
+    do{
+        pose.pose.position.x = map.info.width*map.info.resolution * dist(engine) + map.info.origin.position.x;
+        pose.pose.position.y = map.info.height*map.info.resolution * dist(engine) + map.info.origin.position.y;
+        std::normal_distribution<> dist_yaw(0.0,0.5);
+        quaternionTFToMsg(tf::createQuaternionFromYaw(dist_yaw(engine)),pose.pose.orientation);
+    }while(grid_data(pose.pose.position.x,pose.pose.position.y) != 0);
+}
+*/
 
 //Particleの動きを更新
 void Particle::p_motion_update(geometry_msgs::PoseStamped current,geometry_msgs::PoseStamped previous)
