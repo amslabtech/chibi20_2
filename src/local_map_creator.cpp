@@ -1,4 +1,5 @@
 #include "local_map_creator/local_map_creator.h"
+
 Local_Map_Creator::Local_Map_Creator():private_nh("~")
 {
     //parameter
@@ -26,6 +27,50 @@ void Local_Map_Creator::laser_scan_callback(const sensor_msgs::LaserScan::ConstP
     // std::cout<<"recieved scan_data"<<std::endl;
     scan_data = *msg;
     create_local_map();
+
+    static bool first = true;
+    if (!first) return;
+    ROS_INFO_STREAM("recieved data size : " << msg->ranges.size());
+    bool f = false;
+    double dist = 0.30;
+    int counter = 0;
+    
+    for(size_t i=0;i<4;i++){
+       pole_min_idx[i] = 0;
+       pole_max_idx[i] = 0;
+    }
+    
+    for (size_t i = 0; i < msg->ranges.size(); i++) {
+        if (scan_data.ranges[i] < dist && !f) {
+            f = true;
+            ROS_INFO_STREAM("from " << i);
+            if(i==0)
+               pole_min_idx[counter] = i;
+            else
+               pole_min_idx[counter] = i-10;             
+            if(i > 1000){
+               pole_min_idx[counter] = i-10;
+               pole_max_idx[counter] = 1081;
+            }
+        }
+        if (scan_data.ranges[i] >= dist && f) {
+            f = false;
+            ROS_INFO_STREAM("     " << i << " end");
+            pole_max_idx[counter] = i+10;
+        }
+        
+        if((counter==0 || counter == 3) && pole_max_idx[counter] - pole_min_idx[counter] > 20)
+            counter++;
+        if((counter==1 || counter == 2) && pole_max_idx[counter] - pole_min_idx[counter] > 30)
+            counter++;
+    }
+    
+    ROS_INFO_STREAM("Auto detector");
+    for(size_t i=0;i<4;i++){
+        ROS_INFO_STREAM("from " << pole_min_idx[i]);
+        ROS_INFO_STREAM("     " << pole_max_idx[i] << " end");
+    }
+    first = false;
 }
 
 void Local_Map_Creator::create_local_map()
@@ -39,67 +84,40 @@ void Local_Map_Creator::create_local_map()
     pub_local_map.publish(local_map);
 }
 
-// int Local_Map_Creator::get_radius(int n)//一定距離内のセンサーデータカット
-// {
-//     int radius;
-//     int radius_limit = (column/2)-1;
-//     double bar_limit = 0.00;
-//     bool is_bar = true;
-//     bool fliper = true;
-//     int i= 0;
-//     while(is_bar)
-//     {
-//         if(scan_data.ranges[n+i] > bar_limit)
-//         {
-//             radius = (int)(scan_data.ranges[n+i]/resolution);
-//             is_bar = false;
-//         }
-//         if((n+i >= number_of_laser)||(n+i < 0)) fliper = !fliper;
-//         if(fliper) i++;
-//         else i--;
-//     }
-//     if(radius < radius_limit)
-//     {
-//         is_edge = false;
-//         return radius;
-//     }
-//     else
-//     {
-//         is_edge = true;
-//         return radius_limit;
-//     }
-// }
-
 int Local_Map_Creator::get_radius(int n)//柱のある角度のセンサーデータカット
 {
-    int radius = 0;
+    int right_back_min_idx = pole_min_idx[0];
+    int right_back_max_idx = pole_max_idx[0];
+    int right_forward_min_idx = pole_min_idx[1];
+    int right_forward_max_idx = pole_max_idx[1];
+    int left_back_min_idx = pole_min_idx[2];
+    int left_back_max_idx = pole_max_idx[2];
+    int left_forward_min_idx = pole_min_idx[3];
+    int left_forward_max_idx = pole_max_idx[3];
+    constexpr int alliance = 5;
+
+    int radius = std::round(scan_data.ranges[n]/resolution);;
     int radius_limit = (column/2)-1;
-    radius = (int)(scan_data.ranges[n]/resolution);
-    if(316 <= n)//右前の柱
-    {
-        if(n <= 323) radius = (int)(scan_data.ranges[314]/resolution);
-        else if(n <= 332) radius = (int)(scan_data.ranges[334]/resolution);
-    }
 
-    if(764 <= n)//左前の柱
-    {
-        if(n <= 780) radius = (int)(scan_data.ranges[758]/resolution);
-        else if(n <= 798) radius = (int)(scan_data.ranges[806]/resolution);
+    int proxy = -1;
+    auto calc_proxy = [&](size_t min_idx, size_t max_idx, size_t current_idx) -> int {
+        if (current_idx < min_idx || max_idx < current_idx) return proxy;
+        assert(0 <= static_cast<int>(min_idx) - alliance || max_idx + alliance < scan_data.ranges.size());
+        if (static_cast<int>(min_idx) - alliance < 0) return max_idx + alliance;
+        if (max_idx + alliance >= scan_data.ranges.size()) return min_idx - alliance;
+        size_t middle = (min_idx + max_idx) / 2;
+        if (current_idx < middle) return min_idx - alliance;
+        return max_idx + alliance;
+    };
+    proxy = calc_proxy(right_back_min_idx, right_back_max_idx, n);
+    proxy = calc_proxy(right_forward_min_idx, right_forward_max_idx, n);
+    proxy = calc_proxy(left_back_min_idx, left_back_max_idx, n);
+    proxy = calc_proxy(left_forward_min_idx, left_forward_max_idx, n);
+    proxy = calc_proxy(515, 532, n);
+    if (proxy != -1 && (proxy < 0 || 1080 < proxy)) {
+        ROS_ERROR_STREAM(proxy << " is out of range. " << n);
     }
-
-    if(28 <= n)//右後の柱
-    {
-        if(n <= 48) radius = (int)(scan_data.ranges[26]/resolution);
-        else if(n <= 68) radius = (int)(scan_data.ranges[70]/resolution);
-    }
-
-    if(1040 <= n)//左後の柱
-    {
-        if(n <= 1056) radius = (int)(scan_data.ranges[1038]/resolution);
-        else if(n <= 1074) radius = (int)(scan_data.ranges[1078]/resolution);
-    }
-
-    // if(radius < 3) radius = radius_limit;
+    if (proxy != -1) radius = std::round(scan_data.ranges.at(proxy)/resolution);
 
     if(radius < radius_limit)
     {

@@ -32,6 +32,8 @@ class Local_Map_Creator
     int row;
     int column;
     int radius_limit;
+    int pole_min_idx[4];
+    int pole_max_idx[4];
     bool is_edge;
 
     //member
