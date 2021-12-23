@@ -19,6 +19,8 @@ private:
     //parameter
     int hz;
     double border_distance;
+    int goal_count;
+    int NUM_OF_LAPSES;
 
     //member
     ros::NodeHandle nh;

@@ -1,10 +1,11 @@
 #include "local_goal_creator/local_goal_creator.h"
 
-Local_Goal_Creator::Local_Goal_Creator():private_nh("~")
+Local_Goal_Creator::Local_Goal_Creator():private_nh("~"), goal_count(0)
 {
     //parameter
     private_nh.param("hz",hz,{10});
     private_nh.param("border_distance",border_distance,{1.0});
+    private_nh.param("NUM_OF_LAPSES",NUM_OF_LAPSES,{1});
     //subscriber
     sub_global_path = nh.subscribe("global_path",10,&Local_Goal_Creator::global_path_callback,this);
     sub_current_pose = nh.subscribe("estimated_pose",10,&Local_Goal_Creator::current_pose_callback,this);
@@ -34,7 +35,15 @@ void Local_Goal_Creator::select_next_goal()
     std::cout<<"distance: "<<measure_distance<<std::endl;
     if(measure_distance < border_distance) goal_number += 60;
     if(global_path.poses.size() > goal_number) local_goal = global_path.poses[goal_number];
-    else local_goal = global_path.poses[global_path.poses.size()-1];
+    // else local_goal = global_path.poses[global_path.poses.size()-1];
+    else{
+        goal_count += 1;
+        if(goal_count < NUM_OF_LAPSES){
+            goal_number -= global_path.poses.size();
+            local_goal = global_path.poses[goal_number];
+        }
+        else local_goal = global_path.poses[global_path.poses.size() - 1];
+    }
 }
 
 void Local_Goal_Creator::process()
