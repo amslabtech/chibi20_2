@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="is_rviz" default="true" />
+
+    <!-- topic name -->
+    <arg name="map_topic_name" default="/map" />
+    <arg name="path_topic_name" default="/path" />
+
+    <!-- map server -->
+    <arg name="map_file" default="$(find chibi20_2)/mapdata/map.yaml" />
+    <node pkg="map_server" type="map_server" name="global_map" args="$(arg map_file)" />
+
+    <!-- a star planner -->
+    <node pkg="chibi20_2" type="a_star_planner" name="a_star_planner" output="screen" >
+        <param name="map_topic_name" value="$(arg map_topic_name)" />
+        <param name="path_topic_name" value="$(arg path_topic_name)" />
+        <rosparam command="load" file="$(find chibi20_2)/config/a_star_planner/param/a_star_planner.yaml" />
+        <rosparam command="load" file="$(find chibi20_2)/config/a_star_planner/waypoints/waypoints_list.yaml" />
+        <rosparam command="load" file="$(find chibi20_2)/config/a_star_planner/waypoints/route_list.yaml" />
+    </node>
+
+    <!-- rviz -->
+    <group if="$(arg is_rviz)">
+        <node pkg="rviz" type="rviz" name="rviz" args="-d $(find chibi20_2)config/a_star_planner/rviz/a_star_planner.rviz" />
+    </group>
+
+</launch>

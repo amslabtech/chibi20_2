@@ -1,0 +1,4 @@
+# a_star_planner
+HZ: 1
+WALL_RANGE: 4
+WALL_COST: 10000
