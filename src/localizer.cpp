@@ -307,7 +307,7 @@ int main(int argc,char **argv)
     private_nh.getParam("SELECTION_RATIO",SELECTION_RATIO);
 
      //Subscriber
-     ros::Subscriber map_sub = nh.subscribe("/fixed_map",100,map_callback);
+     ros::Subscriber map_sub = nh.subscribe("map",100,map_callback);
      ros::Subscriber lsr_sub = nh.subscribe("/scan",100,laser_callback);
      ros::Subscriber odo_sub = nh.subscribe("/roomba/odometry",100,odometry_callback);
 
