@@ -308,7 +308,7 @@ int main(int argc,char **argv)
 
      //Subscriber
      ros::Subscriber map_sub = nh.subscribe("map",100,map_callback);
-     ros::Subscriber lsr_sub = nh.subscribe("/scan",100,laser_callback);
+     ros::Subscriber lsr_sub = nh.subscribe("corrected_scan",100,laser_callback);
      ros::Subscriber odo_sub = nh.subscribe("/roomba/odometry",100,odometry_callback);
 
      //Publisher

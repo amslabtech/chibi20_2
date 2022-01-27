@@ -10,7 +10,7 @@ Local_Map_Creator::Local_Map_Creator():private_nh("~")
     private_nh.param("radius_limit",radius_limit,{49});
 
     //subscriber
-    sub_laser_scan = nh.subscribe("scan",10,&Local_Map_Creator::laser_scan_callback,this);
+    sub_laser_scan = nh.subscribe("corrected_scan",10,&Local_Map_Creator::laser_scan_callback,this);
     sub_current_pose = nh.subscribe("estimated_pose",10,&Local_Map_Creator::current_pose_callback,this);
     //publisher
     pub_local_map = nh.advertise<nav_msgs::OccupancyGrid>("local_map",1);
@@ -34,12 +34,12 @@ void Local_Map_Creator::laser_scan_callback(const sensor_msgs::LaserScan::ConstP
     bool f = false;
     double dist = 0.30;
     int counter = 0;
-    
+
     for(size_t i=0;i<4;i++){
        pole_min_idx[i] = 0;
        pole_max_idx[i] = 0;
     }
-    
+
     for (size_t i = 0; i < msg->ranges.size(); i++) {
         if (scan_data.ranges[i] < dist && !f) {
             f = true;
@@ -47,7 +47,7 @@ void Local_Map_Creator::laser_scan_callback(const sensor_msgs::LaserScan::ConstP
             if(i==0)
                pole_min_idx[counter] = i;
             else
-               pole_min_idx[counter] = i-10;             
+               pole_min_idx[counter] = i-10;
             if(i > 1000){
                pole_min_idx[counter] = i-10;
                pole_max_idx[counter] = 1081;
@@ -58,13 +58,13 @@ void Local_Map_Creator::laser_scan_callback(const sensor_msgs::LaserScan::ConstP
             ROS_INFO_STREAM("     " << i << " end");
             pole_max_idx[counter] = i+10;
         }
-        
+
         if((counter==0 || counter == 3) && pole_max_idx[counter] - pole_min_idx[counter] > 20)
             counter++;
         if((counter==1 || counter == 2) && pole_max_idx[counter] - pole_min_idx[counter] > 30)
             counter++;
     }
-    
+
     ROS_INFO_STREAM("Auto detector");
     for(size_t i=0;i<4;i++){
         ROS_INFO_STREAM("from " << pole_min_idx[i]);
